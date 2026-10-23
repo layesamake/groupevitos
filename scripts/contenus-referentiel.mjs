@@ -158,6 +158,10 @@ export const pages = {
     p('L’Institut Technique et Professionnel (ITP) VITO S. propose les parcours <strong>BT-AD</strong> et <strong>BT-ID</strong>, en quatre années.'),
     p('Les tarifs et pièces ci-dessous concernent la rentrée 2026–2027. Le développement des sigles BT-AD et BT-ID sera précisé avec l’établissement.'),
   ].join('') },
+  enseignants: { title: 'Enseignants : déposez votre CV', content: [
+    p('Vous enseignez, ou souhaitez enseigner, à l’Université, au Lycée ou à l’ITP VITO S. ? Déposez votre CV avec le formulaire ci-dessous.'),
+    p('Votre candidature est étudiée par notre équipe, qui vous répond si votre profil correspond à nos besoins. Vos données ne sont utilisées que pour cette étude et peuvent être supprimées sur simple demande.'),
+  ].join('') },
   partenaires: { title: 'Partenaires et vie étudiante', content: [
     p('L’Institut présente ici les établissements et organismes cités dans ses supports. La nature de chaque partenariat est précisée sur demande auprès de l’admission.'),
     p('Une pédagogie concrète, des ateliers pratiques, une vie associative active : découvrez la vie à VITO S. dans la <a href="/galeries/">galerie photos</a>.'),

@@ -1,0 +1,50 @@
+---
+// Formulaire de dépôt de CV des enseignants : envoyé à WordPress (POST multipart), CV stocké dans un dossier privé.
+const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-json';
+---
+<form class="cv-form" data-api={`${api}/groupevitos/v1/candidatures`} novalidate>
+  <div class="cv-form__grid">
+    <label>Nom<input name="nom" autocomplete="family-name" required></label>
+    <label>Prénom<input name="prenom" autocomplete="given-name" required></label>
+    <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
+    <label>Téléphone / WhatsApp<input name="telephone" type="tel" autocomplete="tel"></label>
+    <label>Pôle concerné
+      <select name="pole" required>
+        <option value="">Choisir…</option><option value="universite">Université</option><option value="lycee">Lycée</option><option value="itp">ITP</option><option value="plusieurs">Plusieurs pôles</option>
+      </select>
+    </label>
+    <label>Discipline ou matière<input name="discipline" required placeholder="Ex. : comptabilité, droit des affaires, mathématiques"></label>
+    <label>Niveau d’enseignement<input name="niveau" placeholder="Ex. : Licence, Master, 10e–12e années"></label>
+    <label>Diplôme le plus élevé<input name="diplome"></label>
+    <label>Années d’expérience<input name="experience" type="number" min="0" max="60" inputmode="numeric"></label>
+    <label>Disponibilité<input name="disponibilite" placeholder="Ex. : dès la rentrée, vacations le soir"></label>
+  </div>
+  <label>Message ou lettre de motivation (facultatif)<textarea name="message" rows="4" maxlength="2000"></textarea></label>
+  <label>Votre CV (PDF, DOC ou DOCX, 5 Mo maximum)<input name="cv" type="file" accept=".pdf,.doc,.docx,application/pdf" required></label>
+  <input class="cv-form__trap" name="site_web" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <label class="cv-form__consent"><input name="consentement" type="checkbox" value="1" required> J’accepte que le Groupe VITO S. conserve mes données et mon CV pour étudier ma candidature (durée limitée, suppression possible sur demande).</label>
+  <button class="btn btn--night" type="submit">Envoyer ma candidature</button>
+  <p class="cv-form__status" role="status" aria-live="polite"></p>
+</form>
+<script>
+  const form = document.querySelector<HTMLFormElement>('.cv-form');
+  const status = form?.querySelector<HTMLElement>('.cv-form__status');
+  form?.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!status || !form.reportValidity()) return;
+    const file = (form.elements.namedItem('cv') as HTMLInputElement).files?.[0];
+    if (file && file.size > 5 * 1024 * 1024) { status.textContent = 'Le CV dépasse 5 Mo : réduisez-le puis réessayez.'; return; }
+    const button = form.querySelector('button')!;
+    button.disabled = true;
+    status.textContent = 'Envoi en cours…';
+    try {
+      const response = await fetch(form.dataset.api!, { method: 'POST', body: new FormData(form) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message ?? 'L’envoi a échoué. Réessayez ou contactez-nous.');
+      form.reset();
+      status.textContent = 'Merci ! Votre candidature a bien été envoyée. Un accusé de réception vous a été adressé par e-mail.';
+    } catch (error) {
+      status.textContent = (error as Error).message;
+    } finally { button.disabled = false; }
+  });
+</script>

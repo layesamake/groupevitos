@@ -7,6 +7,7 @@ import Eyebrow from '../components/Eyebrow.astro';
 import FormationCard from '../components/FormationCard.astro';
 import FamilyFilter from '../components/FamilyFilter.astro';
 import Tarifs from '../components/Tarifs.astro';
+import CandidatureForm from '../components/CandidatureForm.astro';
 import { familiesOf, getContent, pageBySlug, pathOf, type Entry } from '../lib/wordpress';
 import { featured, image, plain, publicLinks } from '../lib/html';
 import { figures, listItems } from '../lib/extract';
@@ -21,8 +22,8 @@ const html = publicLinks(page.content.rendered);
 const byFile = (url: string) => media[url.split('/').pop()!];
 const slug = page.slug;
 // Photo de bandeau : image mise en avant de la page, sinon une photo de l'établissement
-const heroFile = ({ admission: 'etudiants-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'etudiants-complices.webp', universite: 'etudiants-numerique.webp', lycee: 'etudiants-lycee.webp', itp: 'etudiants-itp.webp', partenaires: 'etudiants-partenaires.webp' } as Record<string, string>)[slug];
-const cutout = !featured(page, '') && ['universite', 'a-propos', 'lycee', 'itp', 'admission', 'partenaires'].includes(slug);
+const heroFile = ({ admission: 'etudiants-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'etudiants-complices.webp', universite: 'etudiants-numerique.webp', lycee: 'etudiants-lycee.webp', itp: 'etudiants-itp.webp', partenaires: 'etudiants-partenaires.webp', enseignants: 'etudiants-complices.webp' } as Record<string, string>)[slug];
+const cutout = !featured(page, '') && ['universite', 'a-propos', 'lycee', 'itp', 'admission', 'partenaires', 'enseignants'].includes(slug);
 const hero = featured(page, '') ?? (heroFile ? image(media[heroFile], '') : undefined);
 
 const pole = POLES.find(p => p.slug === slug);
@@ -124,6 +125,13 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
       <div class="wrap">
         <article class="prose" set:html={html} />
         {partenaires.length > 0 && <ul class="partner-names">{partenaires.map(p => { const logo = featured(p, p.title.rendered); return <li>{logo && <Picture img={logo} sizes="150px" />}<span set:html={p.title.rendered} />{p.meta.sigle && !logo && <small>{p.meta.sigle}</small>}{p.meta.note && p.meta.note.startsWith('Campus') && <small>{p.meta.note}</small>}</li>; })}</ul>}
+      </div>
+    </section>
+  </> : slug === 'enseignants' ? <>
+    <section class="section">
+      <div class="wrap pole-block">
+        <article class="prose" set:html={html} />
+        <CandidatureForm />
       </div>
     </section>
   </> : slug === 'contacts' ? <>
