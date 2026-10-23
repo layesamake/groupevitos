@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/Base.astro';
+import Hero from '../../components/Hero.astro';
+import { getContent, type Formation } from '../../lib/wordpress';
+import { featured, plain, publicLinks } from '../../lib/html';
+export async function getStaticPaths() {
+  const { formations } = await getContent();
+  return formations.map(formation => ({ params: { slug: formation.slug }, props: { formation } }));
+}
+const { formation } = Astro.props as { formation: Formation };
+const { meta } = formation;
+const image = featured(formation)?.source_url;
+const sections = [
+  ['parcours', 'Niveaux et objectifs'], ['finalite', 'Finalité de la formation'], ['admission', 'Conditions d’admission'],
+  ['enseignements', 'Enseignements principaux'], ['competences', 'Compétences visées'], ['methodes', 'Méthodes pédagogiques'],
+  ['debouches', 'Débouchés'], ['carriere', 'Poursuite d’études et carrière'],
+] as const;
+---
+<Base title={formation.title.rendered} description={plain(formation.content.rendered).slice(0, 160)} image={image}>
+  <Hero title={formation.title.rendered} kicker="Formation" image={image}>
+    <ul class="hero__facts">
+      {meta.niveau && <li><span>Niveau</span>{meta.niveau}</li>}
+      {meta.duree && <li><span>Durée</span>{meta.duree}</li>}
+    </ul>
+  </Hero>
+  <article class="wrap formation">
+    <div class="prose">
+      <a class="back" href="/formations/">← Toutes les formations</a>
+      {formation.content.rendered && <section><h2>Objectifs</h2><Fragment set:html={publicLinks(formation.content.rendered)} /></section>}
+      {sections.filter(([key]) => meta[key]).map(([key, label]) => <section><h2>{label}</h2><Fragment set:html={publicLinks(meta[key])} /></section>)}
+    </div>
+    <aside class="formation__aside">
+      <strong>Intéressé par cette formation ?</strong>
+      <p>Consultez la procédure d’admission ou contactez notre équipe.</p>
+      <a class="button" href="/admission/">Admission</a>
+      <a class="button button--outline" href="/contacts/">Nous contacter</a>
+    </aside>
+  </article>
+</Base>

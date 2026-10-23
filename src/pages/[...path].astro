@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
 import { getContent, pathOf, type Entry } from '../lib/wordpress';
 import { featured, plain, publicLinks } from '../lib/html';
 export async function getStaticPaths() {
@@ -7,12 +8,28 @@ export async function getStaticPaths() {
   return pages.filter(page => page.slug !== 'accueil' && pathOf(page) !== '/').map(page => ({ params: { path: pathOf(page).replace(/^\/|\/$/g, '') }, props: { page } }));
 }
 const { page } = Astro.props as { page: Entry };
-const image = featured(page);
+const { media } = await getContent();
+// Photo de bandeau : image mise en avant de la page, sinon une photo de l'établissement
+const image = featured(page)?.source_url ?? media[{ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg' }[page.slug] ?? 'students-bg.avif'];
+const isGallery = page.slug === 'galeries';
+const categories = isGallery ? [...new Set([...page.content.rendered.matchAll(/<figcaption[^>]*>(.*?)<\/figcaption>/g)].map(match => match[1]))] : [];
 ---
-<Base title={page.title.rendered} description={plain(page.excerpt.rendered)}>
-  <article class="wrap prose page">
-    <h1 set:html={page.title.rendered} />
-    {image?.source_url && <img class="page__image" src={image.source_url} alt={image.alt_text ?? ''} />}
+<Base title={page.title.rendered} description={plain(page.excerpt.rendered)} image={image}>
+  <Hero title={page.title.rendered} image={image} />
+  <article class:list={['wrap', 'section', isGallery ? 'gallery' : 'prose', `page--${page.slug}`]}>
+    {categories.length > 1 && <div class="filters" role="group" aria-label="Filtrer les photos">
+      <button type="button" aria-pressed="true" data-filter="">Toutes</button>
+      {categories.map(category => <button type="button" aria-pressed="false" data-filter={category} set:html={category} />)}
+    </div>}
     <Fragment set:html={publicLinks(page.content.rendered)} />
   </article>
+  {categories.length > 1 && <script>
+    const buttons = document.querySelectorAll<HTMLButtonElement>('.filters button');
+    buttons.forEach(button => button.addEventListener('click', () => {
+      buttons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+      document.querySelectorAll<HTMLElement>('.gallery figure').forEach(figure => {
+        figure.hidden = !!button.dataset.filter && figure.querySelector('figcaption')?.innerHTML !== button.dataset.filter;
+      });
+    }));
+  </script>}
 </Base>

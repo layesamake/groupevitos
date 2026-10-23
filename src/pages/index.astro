@@ -1,21 +1,27 @@
 ---
 import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import FormationCard from '../components/FormationCard.astro';
 import PostCard from '../components/PostCard.astro';
 import { getContent } from '../lib/wordpress';
 import { publicLinks } from '../lib/html';
-const { available, site, pages, posts } = await getContent();
+const { available, site, pages, posts, formations, media } = await getContent();
 // Une page WordPress de slug « accueil » fournit le contenu de la page d'accueil.
 const home = pages.find(page => page.slug === 'accueil');
+const hasAdmission = pages.some(page => page.slug === 'admission');
 ---
 <Base>
-  <section class="hero">
-    <div class="wrap">
-      <h1 set:html={site.name} />
-      {site.description && <p class="hero__lead" set:html={site.description} />}
-      {!available && <p class="hero__lead">Notre nouveau site arrive très bientôt.</p>}
-    </div>
-  </section>
-  {home && <article class="wrap prose" set:html={publicLinks(home.content.rendered)} />}
+  <Hero size="large" title={site.name} lead={site.description || (available ? '' : 'Notre nouveau site arrive très bientôt.')} image={media['etudiants.avif']}>
+    {available && <div class="hero__actions">
+      {formations.length > 0 && <a class="button" href="/formations/">Découvrir nos formations</a>}
+      {hasAdmission && <a class="button button--ghost" href="/admission/">Admission</a>}
+    </div>}
+  </Hero>
+  {formations.length > 0 && <section class="wrap section">
+    <div class="section__head"><h2>Nos formations</h2><a href="/formations/">Toutes les formations →</a></div>
+    <div class="grid">{formations.map(formation => <FormationCard formation={formation} />)}</div>
+  </section>}
+  {home && <section class="band"><article class="wrap prose home" set:html={publicLinks(home.content.rendered)} /></section>}
   {posts.length > 0 && <section class="wrap section">
     <div class="section__head"><h2>Actualités</h2><a href="/actualites/">Toutes les actualités →</a></div>
     <div class="grid">{posts.slice(0, 3).map(post => <PostCard post={post} />)}</div>

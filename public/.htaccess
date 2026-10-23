@@ -1,5 +1,8 @@
 ErrorDocument 404 /404.html
 
+# Anciennes adresses du site Elementor
+RedirectMatch 301 ^/(catalogue-de-formations|filieres)/?$ /formations/
+
 <IfModule mod_headers.c>
   <FilesMatch "\.(css|js|woff2?|svg|webp|avif|png|jpe?g)$">
     Header set Cache-Control "public, max-age=604800"

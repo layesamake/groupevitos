@@ -1,0 +1,14 @@
+---
+import Base from '../../layouts/Base.astro';
+import Hero from '../../components/Hero.astro';
+import FormationCard from '../../components/FormationCard.astro';
+import { getContent } from '../../lib/wordpress';
+const { formations, media } = await getContent();
+const description = 'DUT, Licence et Master : des formations professionnalisantes en gestion, droit, finance et logistique.';
+---
+<Base title="Nos formations" description={description} image={media['formations-hero.avif']}>
+  <Hero title="Nos formations" lead={description} image={media['formations-hero.avif']} />
+  <section class="wrap section">
+    {formations.length ? <div class="grid">{formations.map(formation => <FormationCard formation={formation} />)}</div> : <p>Le catalogue des formations sera bientôt disponible.</p>}
+  </section>
+</Base>

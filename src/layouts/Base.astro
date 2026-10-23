@@ -2,16 +2,27 @@
 import '../styles/global.css';
 import { getContent, pathOf } from '../lib/wordpress';
 import { plain } from '../lib/html';
-interface Props { title?: string; description?: string }
-const { site, pages, posts } = await getContent();
-const title = Astro.props.title ? `${plain(Astro.props.title)} | ${site.name}` : site.name;
+interface Props { title?: string; description?: string; image?: string }
+const { site, pages, posts, formations, media } = await getContent();
+const title = Astro.props.title ? `${plain(Astro.props.title)} | ${site.name}` : `${plain(site.name)} — ${plain(site.description)}`;
 const description = plain(Astro.props.description || site.description || site.name);
+const visible = pages.filter(page => !page.parent && page.slug !== 'accueil' && page.slug !== 'inscription' && pathOf(page) !== '/')
+  .sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0))
+  .map(page => ({ path: pathOf(page), label: plain(page.title.rendered), order: page.menu_order ?? 0 }));
+// « Formations » s'insère juste après « À propos » (premier élément du menu WordPress)
 const menu = [
-  ...pages.filter(page => !page.parent && page.slug !== 'accueil' && pathOf(page) !== '/').sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0)).map(page => ({ path: pathOf(page), label: plain(page.title.rendered) })),
-  ...(posts.length ? [{ path: '/actualites/', label: 'Actualités' }] : []),
+  ...visible.slice(0, 1),
+  ...(formations.length ? [{ path: '/formations/', label: 'Formations', order: 0 }] : []),
+  ...visible.slice(1),
+  ...(posts.length ? [{ path: '/actualites/', label: 'Actualités', order: 99 }] : []),
 ];
+const signup = pages.find(page => page.slug === 'inscription');
+const contacts = pages.find(page => page.slug === 'contacts');
+const contactList = contacts?.content.rendered.match(/<ul>[\s\S]*?<\/ul>/)?.[0];
+const logo = media['cropped-logovitos.jpg'];
 const current = (path: string) => Astro.url.pathname.startsWith(path) ? 'page' : undefined;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const image = Astro.props.image ?? media['herovitos.jpg'];
 ---
 <!doctype html>
 <html lang="fr">
@@ -19,28 +30,53 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b2b6f" />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
     <title>{title}</title>
   </head>
   <body>
     <header class="header">
       <div class="wrap header__inner">
-        <a class="brand" href="/" set:html={site.name} />
-        {menu.length > 0 && <nav aria-label="Navigation principale">
-          {menu.map(item => <a href={item.path} aria-current={current(item.path)} set:html={item.label} />)}
-        </nav>}
+        <a class="brand" href="/" aria-label={`${plain(site.name)} — accueil`}>
+          {logo ? <img src={logo} alt="Institut VITO S." width="500" height="144" /> : <span set:html={site.name} />}
+        </a>
+        {menu.length > 0 && <>
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menu"><span></span><span></span><span></span></button>
+          <nav id="menu" class="nav" aria-label="Navigation principale">
+            {menu.map(item => <a href={item.path} aria-current={current(item.path)} set:html={item.label} />)}
+            {signup && <a class="button button--small" href={pathOf(signup)}>S’inscrire</a>}
+          </nav>
+        </>}
       </div>
     </header>
+    <script>
+      const toggle = document.querySelector<HTMLButtonElement>('.nav-toggle');
+      toggle?.addEventListener('click', () => {
+        const open = toggle.getAttribute('aria-expanded') !== 'true';
+        toggle.setAttribute('aria-expanded', String(open));
+        document.querySelector('.header')?.toggleAttribute('data-open', open);
+      });
+    </script>
     <main><slot /></main>
     <footer class="footer">
-      <div class="wrap footer__inner">
-        <span set:html={`© ${new Date().getFullYear()} ${site.name}`} />
-        <a href="mailto:contact@groupevitos.com">contact@groupevitos.com</a>
+      <div class="wrap footer__grid">
+        <div>
+          <strong class="footer__name" set:html={site.name} />
+          {site.description && <p set:html={site.description} />}
+        </div>
+        {contactList && <div class="footer__contacts"><strong>Nous contacter</strong><Fragment set:html={contactList} /></div>}
+        <div>
+          <strong>Liens utiles</strong>
+          <ul>{menu.map(item => <li><a href={item.path} set:html={item.label} /></li>)}</ul>
+        </div>
       </div>
+      <div class="wrap footer__bottom"><span set:html={`© ${new Date().getFullYear()} ${site.name}`} /></div>
     </footer>
   </body>
 </html>
