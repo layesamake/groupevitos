@@ -8,6 +8,7 @@ import FormationCard from '../components/FormationCard.astro';
 import FamilyFilter from '../components/FamilyFilter.astro';
 import Tarifs from '../components/Tarifs.astro';
 import CandidatureForm from '../components/CandidatureForm.astro';
+import AdmissionForm from '../components/AdmissionForm.astro';
 import { familiesOf, getContent, pageBySlug, pathOf, type Entry } from '../lib/wordpress';
 import { featured, image, plain, publicLinks } from '../lib/html';
 import { figures, listItems } from '../lib/extract';
@@ -118,6 +119,8 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
           {block.phones[0] && <a href={telHref(block.phones[0].meta.valeur)}>{block.phones[0].meta.valeur}</a>}
           <a class="pole__more" href={`/admission/#${block.pole.slug}`}>Dossier et tarifs →</a>
         </article>)}</div>
+        <h2 id="demande">Faire une demande d’admission</h2>
+        <AdmissionForm />
       </div>
     </section>
   </> : slug === 'partenaires' ? <>

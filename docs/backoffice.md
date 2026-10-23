@@ -1,0 +1,26 @@
+# Back-office Groupe VITO S. — socle et admissions
+
+Extension « mu-plugins » WordPress (admin.groupevitos.com), même architecture que le back-office OPENTOURS.
+
+## Fichiers (`wordpress/mu-plugins/`)
+- `groupevitos-bo-core.php` — tables, profils et droits, journal, numérotation, menu **GROUPE VITOS**, identité et page de connexion.
+- `groupevitos-bo-admissions.php` — demandes d'admission, pièces, décisions, doublons, export CSV, formulaire public (`POST /wp-json/groupevitos/v1/admissions`).
+- `groupevitos-bo-inscriptions.php` — inscriptions (matricule), fiche imprimable, tableau de bord, réglages.
+- Site : `src/components/AdmissionForm.astro`, affiché sur `/inscription/`.
+- Recette : `wordpress/tests/recette-bo.php` (62 contrôles, WordPress Playground).
+
+## Profils
+| Profil | Admissions | Inscriptions | Réglages / comptes / CV |
+|---|---|---|---|
+| Direction | tous droits | tous droits (dont annulation) | oui |
+| Scolarité | voir, créer, modifier, exporter | voir, créer, modifier, exporter | non |
+| Comptabilité | voir | voir, exporter | non |
+| Responsable de pôle | voir, créer, modifier, **décider** (son pôle seulement) | voir | non |
+
+Le pôle d'un responsable se règle sur sa fiche utilisateur (« Pôle géré »). Sans pôle, il ne voit rien. Les droits sont contrôlés côté serveur ; les profils métier n'ont aucun droit WordPress sur les contenus.
+
+## Parcours
+Nouvelle → En étude → (Dossier incomplet / Liste d'attente) → Acceptée / Refusée → **Inscrite** (matricule `UNI-2026-0001`, `LYC-…`, `ITP-…`, sans trou ni doublon). Un refus, un abandon ou une liste d'attente exige un motif. Inscrire avec des pièces manquantes exige une dérogation motivée. Toute action est tracée dans l'historique de la demande.
+
+## À valider par la Direction
+Liste des pièces par pôle (`GVB_PIECES`), durée de conservation des demandes, montants des frais (saisis à l'inscription en attendant le module Scolarité et finances), e-mail d'alerte (Réglages).

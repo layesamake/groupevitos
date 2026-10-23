@@ -1,0 +1,49 @@
+---
+// Demande d'admission en ligne : envoyée à WordPress (back-office > Admissions). Aucun document n'est déposé ici : la scolarité indique les pièces à apporter.
+const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-json';
+---
+<form class="cv-form adm-form" data-api={`${api}/groupevitos/v1/admissions`} novalidate>
+  <div class="cv-form__grid">
+    <label>Pôle souhaité
+      <select name="pole" required>
+        <option value="">Choisir…</option><option value="universite">Université</option><option value="lycee">Lycée</option><option value="itp">ITP</option>
+      </select>
+    </label>
+    <label>Niveau ou classe demandé<input name="niveau" placeholder="Ex. : Licence 1, 10e année"></label>
+    <label>Nom du candidat<input name="nom" autocomplete="family-name" required></label>
+    <label>Prénom du candidat<input name="prenom" autocomplete="given-name" required></label>
+    <label>Date de naissance<input name="naissance" type="date" autocomplete="bday"></label>
+    <label>Téléphone / WhatsApp<input name="telephone" type="tel" autocomplete="tel"></label>
+    <label>E-mail<input name="email" type="email" autocomplete="email"></label>
+    <label>Parent ou tuteur (si mineur)<input name="parent_nom"></label>
+    <label>Téléphone du parent<input name="parent_telephone" type="tel"></label>
+    <label>Établissement d’origine<input name="provenance"></label>
+  </div>
+  <label>Message (facultatif)<textarea name="message" rows="3" maxlength="2000"></textarea></label>
+  <input class="cv-form__trap" name="site_web" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <label class="cv-form__consent"><input name="consentement" type="checkbox" value="1" required> J’accepte que le Groupe VITO S. conserve ces informations pour traiter ma demande d’admission.</label>
+  <button class="btn btn--night" type="submit">Envoyer ma demande</button>
+  <p class="cv-form__status" role="status" aria-live="polite"></p>
+</form>
+<script>
+  const form = document.querySelector<HTMLFormElement>('.adm-form');
+  const status = form?.querySelector<HTMLElement>('.cv-form__status');
+  form?.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!status || !form.reportValidity()) return;
+    const data = new FormData(form);
+    if (!data.get('telephone') && !data.get('email') && !data.get('parent_telephone')) { status.textContent = 'Indiquez au moins un téléphone ou une adresse e-mail.'; return; }
+    const button = form.querySelector('button')!;
+    button.disabled = true;
+    status.textContent = 'Envoi en cours…';
+    try {
+      const response = await fetch(form.dataset.api!, { method: 'POST', body: data });
+      const answer = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(answer.message ?? 'L’envoi a échoué. Réessayez ou contactez-nous.');
+      form.reset();
+      status.textContent = `Merci ! Votre demande${answer.code ? ` (${answer.code})` : ''} a bien été reçue. La scolarité vous contactera pour la suite du dossier.`;
+    } catch (error) {
+      status.textContent = (error as Error).message;
+    } finally { button.disabled = false; }
+  });
+</script>
