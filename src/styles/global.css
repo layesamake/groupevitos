@@ -366,3 +366,7 @@ button { font: inherit; }
   .hero__gallery > .hero__cutout img { height: 100%; object-fit: contain; object-position: 50% 100%; }
   .page-hero__image--cutout { height: 380px; }
 }
+
+/* Logo de l'Institut */
+.brand__logo { height: 33px; width: auto; flex: none; }
+.logo-institut { width: min(100%, 460px); height: auto; }

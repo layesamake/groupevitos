@@ -62,7 +62,7 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
     <header class="header">
       <div class="wrap header__inner">
         <a class="brand" href="/" aria-label={`${plain(site.name)} — accueil`}>
-          <span class="mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <img class="brand__logo" src="/symbole-ivs.svg" width="46" height="33" alt="" />
           <span class="brand__name">{institut.short}</span>
         </a>
         <nav class="header__nav" aria-label="Navigation principale">
@@ -80,7 +80,7 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
     <footer class="footer">
       <div class="wrap footer__grid">
         <div class="footer__brand">
-          <span class="mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <img class="brand__logo" src="/symbole-ivs.svg" width="46" height="33" alt="" />
           <strong set:html={site.name} />
           <p>{identite.devise}</p>
         </div>

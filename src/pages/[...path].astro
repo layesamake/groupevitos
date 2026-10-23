@@ -141,6 +141,7 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
   </> : slug === 'a-propos' ? <>
     <section class="section">
       <div class="wrap pole-block">
+        <img class="logo-institut" src="/logo-institut-vitos.webp" width="460" height="117" alt="Institut VITO S. — établissement privé d’enseignement secondaire et supérieur agréé par l’État" />
         <p class="motto">{identite.devise}</p>
         <article class="prose" set:html={html} />
         <p class="note">{identite.reconnaissance}</p>
