@@ -2,8 +2,9 @@
 // Bandeau des pages intérieures : fond cobalt, titre, photo rognée en gradins.
 import Picture from './Picture.astro';
 import type { Img } from '../lib/html';
-interface Props { title: string; lead?: string; kicker?: string; img?: Img }
-const { title, lead, kicker, img } = Astro.props;
+interface Props { title: string; lead?: string; kicker?: string; img?: Img; cutout?: boolean }
+// cutout : photo détourée (fond transparent), posée en bas du bandeau sans rognage
+const { title, lead, kicker, img, cutout = false } = Astro.props;
 ---
 <section class:list={['page-hero', { 'page-hero--image': img }]}>
   <div class="wrap page-hero__inner">
@@ -13,6 +14,6 @@ const { title, lead, kicker, img } = Astro.props;
       {lead && <p class="page-hero__lead" set:html={lead} />}
       <slot />
     </div>
-    {img && <Picture class="page-hero__image stepped" img={img} sizes="(min-width: 900px) 45vw, 100vw" eager />}
+    {img && <Picture class:list={['page-hero__image', cutout ? 'page-hero__image--cutout' : 'stepped']} img={img} sizes="(min-width: 900px) 45vw, 100vw" eager />}
   </div>
 </section>

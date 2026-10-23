@@ -17,7 +17,8 @@ const byFile = (url: string) => media[url.split('/').pop()!];
 
 const slogan = plain(site.description) || identite.devise.replace(/[.!]$/, '');
 const lines = stairLines(slogan.replace(/[.!]$/, ''));
-const students = image(media['etudiants.avif'], 'Étudiantes et étudiants de l’Institut VITO S. en uniforme');
+const students = image(media['etudiants-groupe.webp'] ?? media['etudiants.avif'], 'Étudiantes et étudiants de l’Institut VITO S. en uniforme');
+const cutout = !!media['etudiants-groupe.webp'];
 
 const home = page('accueil')?.content.rendered ?? '';
 const why = listItems(section(home, /pourquoi/i));
@@ -55,12 +56,12 @@ const reperes = [
       </div>
       <div class="hero__visual" aria-hidden="true">
         <span class="hero__step">I</span><span class="hero__step">V</span><span class="hero__step">S</span>
-        <div class="hero__photo"><Picture img={students} sizes="300px" eager alt="" /></div>
+        <div class:list={['hero__photo', { 'hero__photo--cutout': cutout }]}><Picture img={students} sizes="300px" eager alt="" /></div>
       </div>
       <div class="hero__gallery">
         <Picture img={image(media['graduation-1.jpg'], 'Remise de diplômes')} sizes="20vw" />
         <Picture img={image(media['F89A7166-scaled-1.avif'], 'Étudiants en cours')} sizes="20vw" />
-        <div><Picture img={students} sizes="28vw" /></div>
+        <div class:list={{ 'hero__cutout': cutout }}><Picture img={students} sizes="28vw" /></div>
       </div>
     </div>
   </section>

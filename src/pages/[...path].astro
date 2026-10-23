@@ -21,7 +21,8 @@ const html = publicLinks(page.content.rendered);
 const byFile = (url: string) => media[url.split('/').pop()!];
 const slug = page.slug;
 // Photo de bandeau : image mise en avant de la page, sinon une photo de l'établissement
-const heroFile = ({ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'F89A7166-scaled-1.avif', universite: 'formations-hero.avif', lycee: 'F89A7161-scaled-1.avif', itp: 'F89A7166-scaled-1.avif', partenaires: 'graduation-1.jpg' } as Record<string, string>)[slug];
+const heroFile = ({ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'etudiants-complices.webp', universite: 'etudiants-numerique.webp', lycee: 'F89A7161-scaled-1.avif', itp: 'F89A7166-scaled-1.avif', partenaires: 'graduation-1.jpg' } as Record<string, string>)[slug];
+const cutout = !featured(page, '') && ['universite', 'a-propos'].includes(slug);
 const hero = featured(page, '') ?? (heroFile ? image(media[heroFile], '') : undefined);
 
 const pole = POLES.find(p => p.slug === slug);
@@ -45,7 +46,7 @@ const pieces = (block?: { dossier?: { meta: { pieces: string } } }) => listItems
 const reperes = identityLines(identite.reperes).map(line => { const [year, ...text] = line.split('|'); return { year: year.trim(), text: text.join('|').trim() }; });
 ---
 <Base title={page.title.rendered} description={plain(page.excerpt.rendered) || plain(page.content.rendered).slice(0, 160)} image={hero?.src}>
-  <PageHero title={page.title.rendered} img={hero} kicker={isPole ? 'Groupe VITO S.' : undefined} />
+  <PageHero title={page.title.rendered} img={hero} cutout={cutout} kicker={isPole ? 'Groupe VITO S.' : undefined} />
 
   {slug === 'galeries' && photos.length ? (
     <section class="section">
