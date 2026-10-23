@@ -21,8 +21,8 @@ const html = publicLinks(page.content.rendered);
 const byFile = (url: string) => media[url.split('/').pop()!];
 const slug = page.slug;
 // Photo de bandeau : image mise en avant de la page, sinon une photo de l'établissement
-const heroFile = ({ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'etudiants-complices.webp', universite: 'etudiants-numerique.webp', lycee: 'F89A7161-scaled-1.avif', itp: 'F89A7166-scaled-1.avif', partenaires: 'graduation-1.jpg' } as Record<string, string>)[slug];
-const cutout = !featured(page, '') && ['universite', 'a-propos'].includes(slug);
+const heroFile = ({ admission: 'etudiants-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'etudiants-complices.webp', universite: 'etudiants-numerique.webp', lycee: 'etudiants-lycee.webp', itp: 'etudiants-itp.webp', partenaires: 'etudiants-partenaires.webp' } as Record<string, string>)[slug];
+const cutout = !featured(page, '') && ['universite', 'a-propos', 'lycee', 'itp', 'admission', 'partenaires'].includes(slug);
 const hero = featured(page, '') ?? (heroFile ? image(media[heroFile], '') : undefined);
 
 const pole = POLES.find(p => p.slug === slug);
