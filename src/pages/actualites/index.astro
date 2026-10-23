@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getContent } from '../../lib/wordpress';
+const { posts } = await getContent();
+---
+<Base title="Actualités" description="Les dernières actualités du groupe.">
+  <section class="wrap section">
+    <h1>Actualités</h1>
+    {posts.length ? <div class="grid">{posts.map(post => <PostCard post={post} />)}</div> : <p>Aucune actualité pour le moment.</p>}
+  </section>
+</Base>

@@ -1,0 +1,41 @@
+name: Construire et déployer
+
+on:
+  push:
+    branches: [main]
+  # Déclenché par le mu-plugin WordPress à chaque publication
+  repository_dispatch:
+    types: [wordpress-publish]
+  workflow_dispatch:
+
+# Une seule mise en ligne à la fois ; les publications rapprochées sont regroupées dans le build suivant.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Construire le site
+        run: npm run build
+        env:
+          # true : si WordPress ne répond pas, le build échoue et le site en ligne reste intact.
+          # Mettre la variable de dépôt WP_REQUIRED à false tant que WordPress n'est pas installé.
+          WP_REQUIRED: ${{ vars.WP_REQUIRED || 'true' }}
+      - name: Préparer l'archive
+        run: |
+          echo "${GITHUB_SHA::7}-${GITHUB_RUN_ID}" > dist/build.txt
+          echo "BUILD_ID=$(cat dist/build.txt)" >> "$GITHUB_ENV"
+          (cd dist && zip -qr ../site.zip .)
+      - name: Déployer sur Hostinger
+        run: node scripts/deploy-hostinger.mjs site.zip
+        env:
+          HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}

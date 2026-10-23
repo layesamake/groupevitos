@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+import PostCard from '../components/PostCard.astro';
+import { getContent } from '../lib/wordpress';
+import { publicLinks } from '../lib/html';
+const { available, site, pages, posts } = await getContent();
+// Une page WordPress de slug « accueil » fournit le contenu de la page d'accueil.
+const home = pages.find(page => page.slug === 'accueil');
+---
+<Base>
+  <section class="hero">
+    <div class="wrap">
+      <h1 set:html={site.name} />
+      {site.description && <p class="hero__lead" set:html={site.description} />}
+      {!available && <p class="hero__lead">Notre nouveau site arrive très bientôt.</p>}
+    </div>
+  </section>
+  {home && <article class="wrap prose" set:html={publicLinks(home.content.rendered)} />}
+  {posts.length > 0 && <section class="wrap section">
+    <div class="section__head"><h2>Actualités</h2><a href="/actualites/">Toutes les actualités →</a></div>
+    <div class="grid">{posts.slice(0, 3).map(post => <PostCard post={post} />)}</div>
+  </section>}
+</Base>

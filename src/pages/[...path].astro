@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import { getContent, pathOf, type Entry } from '../lib/wordpress';
+import { featured, plain, publicLinks } from '../lib/html';
+export async function getStaticPaths() {
+  const { pages } = await getContent();
+  return pages.filter(page => page.slug !== 'accueil' && pathOf(page) !== '/').map(page => ({ params: { path: pathOf(page).replace(/^\/|\/$/g, '') }, props: { page } }));
+}
+const { page } = Astro.props as { page: Entry };
+const image = featured(page);
+---
+<Base title={page.title.rendered} description={plain(page.excerpt.rendered)}>
+  <article class="wrap prose page">
+    <h1 set:html={page.title.rendered} />
+    {image?.source_url && <img class="page__image" src={image.source_url} alt={image.alt_text ?? ''} />}
+    <Fragment set:html={publicLinks(page.content.rendered)} />
+  </article>
+</Base>

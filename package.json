@@ -1,0 +1,16 @@
+{
+  "name": "groupevitos-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "node scripts/deploy-hostinger.mjs site.zip"
+  },
+  "dependencies": {
+    "astro": "^5.16.6"
+  }
+}

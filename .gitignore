@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+.env
+site.zip
+
+# Sauvegardes Duplicator de l'ancien site (peuvent contenir la base de données)
+*_archive.zip
+installer*.php

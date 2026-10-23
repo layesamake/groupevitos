@@ -1,0 +1,46 @@
+---
+import '../styles/global.css';
+import { getContent, pathOf } from '../lib/wordpress';
+import { plain } from '../lib/html';
+interface Props { title?: string; description?: string }
+const { site, pages, posts } = await getContent();
+const title = Astro.props.title ? `${plain(Astro.props.title)} | ${site.name}` : site.name;
+const description = plain(Astro.props.description || site.description || site.name);
+const menu = [
+  ...pages.filter(page => !page.parent && page.slug !== 'accueil' && pathOf(page) !== '/').sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0)).map(page => ({ path: pathOf(page), label: plain(page.title.rendered) })),
+  ...(posts.length ? [{ path: '/actualites/', label: 'Actualités' }] : []),
+];
+const current = (path: string) => Astro.url.pathname.startsWith(path) ? 'page' : undefined;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="header">
+      <div class="wrap header__inner">
+        <a class="brand" href="/" set:html={site.name} />
+        {menu.length > 0 && <nav aria-label="Navigation principale">
+          {menu.map(item => <a href={item.path} aria-current={current(item.path)} set:html={item.label} />)}
+        </nav>}
+      </div>
+    </header>
+    <main><slot /></main>
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <span set:html={`© ${new Date().getFullYear()} ${site.name}`} />
+        <a href="mailto:contact@groupevitos.com">contact@groupevitos.com</a>
+      </div>
+    </footer>
+  </body>
+</html>
