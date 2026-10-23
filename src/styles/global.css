@@ -1,9 +1,9 @@
 /* Système visuel « Escalier » — mobile d'abord, puis ordinateur à partir de 900 px. */
 :root {
-  --cobalt: #1F4FFF;
+  --cobalt: #08065B;
   --cobalt-soft: #DCE4FF;
   --cobalt-mid: #A9BCFF;
-  --night: #0A1433;
+  --night: #040340;
   --mango: #FFC23D;
   --mist: #F2F4F9;
   --line: #DDE2EE;
@@ -328,7 +328,7 @@ button { font: inherit; }
 /* Référentiel : pôles, tarifs, notes, partenaires */
 .poles { display: grid; gap: 14px; }
 @media (min-width: 760px) { .poles { grid-template-columns: repeat(3, 1fr); } }
-.pole { display: flex; flex-direction: column; gap: .5rem; padding: 1.3rem; border-radius: 22px; background: var(--white); border: 1px solid var(--line); color: inherit; transition: transform .2s, box-shadow .2s; }
+.pole { text-decoration: none; display: flex; flex-direction: column; gap: .5rem; padding: 1.3rem; border-radius: 22px; background: var(--white); border: 1px solid var(--line); color: inherit; transition: transform .2s, box-shadow .2s; }
 .pole:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(10, 20, 51, .12); }
 .pole:nth-child(2) { background: var(--cobalt); color: var(--white); border-color: transparent; }
 .pole:nth-child(3) { background: var(--night); color: var(--white); border-color: transparent; }
