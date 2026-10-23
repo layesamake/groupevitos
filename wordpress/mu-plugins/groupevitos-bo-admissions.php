@@ -185,7 +185,7 @@ function gvb_page_demande() {
     $pieces = $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . gvb_table('pieces') . ' WHERE demande_id = %d ORDER BY id', $id));
     $manque = array_filter($pieces, fn($p) => !$p->recue);
     echo '<div class="gvb-grille"><div>';
-    echo '<div class="gvb-boite"><h2>Candidat</h2>';
+    echo '<div class="gvb-boite"><h2>' . gvb_icone('utilisateurs', 18) . 'Candidat</h2>';
     if (gvb_can('admissions', 'modifier') && !in_array($d->statut, ['inscrite'], true)) {
         echo gvb_form('gvb_demande_sauver', 'gvb_demande_sauver', ['id' => $id]) . gvb_champs_demande($d) . gvb_bouton('Enregistrer') . '</form>';
     } else {
@@ -193,9 +193,9 @@ function gvb_page_demande() {
     }
     echo '</div></div><div>';
 
-    echo '<div class="gvb-boite"><h2>Pièces du dossier (' . (count($pieces) - count($manque)) . '/' . count($pieces) . ')</h2><ul class="gvb-pieces">';
+    echo '<div class="gvb-boite"><h2>' . gvb_icone('dossier', 18) . 'Pièces du dossier (' . (count($pieces) - count($manque)) . '/' . count($pieces) . ')</h2><ul class="gvb-pieces">';
     foreach ($pieces as $p) {
-        echo '<li><span class="' . ($p->recue ? 'gvb-ok' : 'gvb-ko') . '">' . ($p->recue ? '✓ Reçue' : '✗ Manquante') . '</span> ' . esc_html($p->libelle) . ($p->recue ? ' <small class="gvb-rappel">' . esc_html(gvb_d($p->recue_le)) . '</small>' : '');
+        echo '<li><span class="' . ($p->recue ? 'gvb-ok' : 'gvb-ko') . '">' . (gvb_icone($p->recue ? 'check' : 'croix', 14) . ($p->recue ? ' Reçue' : ' Manquante')) . '</span> ' . esc_html($p->libelle) . ($p->recue ? ' <small class="gvb-rappel">' . esc_html(gvb_d($p->recue_le)) . '</small>' : '');
         if (gvb_can('admissions', 'modifier') && $d->statut !== 'inscrite') echo gvb_form('gvb_piece_basculer', 'gvb_piece_' . $p->id, ['id' => $id, 'piece' => $p->id], 'class="gvb-inline"') . gvb_bouton($p->recue ? 'Marquer manquante' : 'Marquer reçue', false) . '</form>';
         echo '</li>';
     }
@@ -205,11 +205,11 @@ function gvb_page_demande() {
 
     $suivants = array_filter(GVB_TRANSITIONS[$d->statut] ?? [], fn($s) => $s !== 'acceptee' || true);
     if (gvb_can('admissions', 'valider') && $suivants) {
-        echo '<div class="gvb-boite"><h2>Décision</h2>' . gvb_form('gvb_demande_statut', 'gvb_demande_statut', ['id' => $id]) . gvb_liste('statut', 'Nouveau statut', array_combine($suivants, array_map(fn($s) => GVB_STATUTS[$s], $suivants)))
+        echo '<div class="gvb-boite"><h2>' . gvb_icone('check', 18) . 'Décision</h2>' . gvb_form('gvb_demande_statut', 'gvb_demande_statut', ['id' => $id]) . gvb_liste('statut', 'Nouveau statut', array_combine($suivants, array_map(fn($s) => GVB_STATUTS[$s], $suivants)))
             . gvb_champ('motif', 'Motif (obligatoire pour un refus, un abandon ou une liste d’attente)', '', 'text', 'maxlength="255"') . gvb_bouton('Appliquer') . '</form></div>';
     }
     if ($d->statut === 'acceptee' && gvb_can('inscriptions', 'creer')) {
-        echo '<div class="gvb-boite"><h2>Inscription</h2>';
+        echo '<div class="gvb-boite"><h2>' . gvb_icone('inscription', 18) . 'Inscription</h2>';
         if ($manque) echo '<div class="gvb-alerte">' . count($manque) . ' pièce(s) manquante(s). Une dérogation motivée est nécessaire pour inscrire.</div>';
         echo gvb_form('gvb_inscrire', 'gvb_inscrire', ['id' => $id]) . '<div class="gvb-champs">' . gvb_champ('frais_inscription', 'Frais d’inscription (FCFA)', '', 'number', 'min="0" step="1" required') . gvb_champ('frais_scolarite', 'Scolarité annuelle (FCFA)', '', 'number', 'min="0" step="1" required') . '</div>'
             . ($manque ? gvb_champ('derogation', 'Dérogation (motif)', '', 'text', 'maxlength="255" required') : '') . gvb_bouton('Inscrire le candidat') . '</form></div>';
@@ -217,7 +217,7 @@ function gvb_page_demande() {
     echo '</div></div>';
 
     $h = $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . gvb_table('historique') . ' WHERE demande_id = %d ORDER BY id DESC LIMIT 100', $id));
-    echo '<div class="gvb-boite"><h2>Historique</h2><ul class="gvb-journal">';
+    echo '<div class="gvb-boite"><h2>' . gvb_icone('journal', 18) . 'Historique</h2><ul class="gvb-journal">';
     foreach ($h as $x) { $u = get_userdata($x->user_id); echo '<li><strong>' . esc_html($x->action) . '</strong> — ' . esc_html($u ? $u->display_name : 'Site public') . ' <small class="gvb-rappel">' . esc_html(gvb_dt($x->cree_le)) . '</small>' . ($x->details ? '<br><small>' . esc_html($x->details) . '</small>' : '') . '</li>'; }
     echo '</ul></div>';
     gvb_fin();

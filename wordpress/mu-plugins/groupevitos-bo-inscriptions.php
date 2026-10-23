@@ -150,10 +150,10 @@ function gvb_page_tableau() {
         . gvb_carte('Doublons probables', $k['doublons'], 'À vérifier', 'utilisateurs', $k['doublons'] ? 'attention' : '') . '</div>';
     $lignes = [];
     foreach (GVB_POLES as $slug => $nom) { if ($pole !== '' && $pole !== $slug) continue; $p = $k['poles'][$slug] ?? []; $lignes[] = '<tr><td><strong>' . esc_html($nom) . '</strong></td><td>' . array_sum($p) . '</td><td>' . ($p['acceptee'] ?? 0) . '</td><td>' . ($p['inscrite'] ?? 0) . '</td><td>' . ($p['refusee'] ?? 0) . '</td></tr>'; }
-    echo '<div class="gvb-boite"><h2>Répartition par pôle</h2>' . gvb_tableau(['Pôle', 'Demandes', 'Acceptées', 'Inscrites', 'Refusées'], $lignes) . '</div>';
+    echo '<div class="gvb-boite"><h2>' . gvb_icone('pole', 18) . 'Répartition par pôle</h2>' . gvb_tableau(['Pôle', 'Demandes', 'Acceptées', 'Inscrites', 'Refusées'], $lignes) . '</div>';
     $recent = [];
     foreach (gvb_requete_demandes(['annee' => '', 'pole' => '', 'statut' => '', 'q' => ''], 8) as $d) $recent[] = '<tr><td><a href="' . esc_url(gvb_url('gv-demande', ['id' => $d->id])) . '">' . esc_html($d->code) . '</a></td><td>' . esc_html($d->prenom . ' ' . $d->nom) . '</td><td>' . esc_html(GVB_POLES[$d->pole] ?? '') . '</td><td>' . gvb_badge($d->statut) . '</td></tr>';
-    echo '<div class="gvb-boite"><h2>Dernières demandes</h2>' . gvb_tableau(['Code', 'Candidat', 'Pôle', 'Statut'], $recent, 'Aucune demande pour le moment.') . '</div>';
+    echo '<div class="gvb-boite"><h2>' . gvb_icone('liste', 18) . 'Dernières demandes</h2>' . gvb_tableau(['Code', 'Candidat', 'Pôle', 'Statut'], $recent, 'Aucune demande pour le moment.') . '</div>';
     gvb_fin();
 }
 
@@ -162,7 +162,7 @@ function gvb_page_reglages() {
     gvb_exiger('parametres', 'voir');
     $r = gvb_reglages();
     gvb_debut('Réglages', 'reglage');
-    echo '<div class="gvb-boite" style="max-width:640px"><h2>Admissions</h2>' . gvb_form('gvb_reglages_sauver', 'gvb_reglages_sauver') . gvb_champ('annee', 'Année académique en cours', $r['annee'], 'text', 'required pattern="[0-9]{4}[–-][0-9]{4}"')
+    echo '<div class="gvb-boite" style="max-width:640px"><h2>' . gvb_icone('reglage', 18) . 'Admissions</h2>' . gvb_form('gvb_reglages_sauver', 'gvb_reglages_sauver') . gvb_champ('annee', 'Année académique en cours', $r['annee'], 'text', 'required pattern="[0-9]{4}[–-][0-9]{4}"')
         . gvb_champ('email', 'E-mail d’alerte des nouvelles demandes', $r['email'], 'email', 'required') . (gvb_can('parametres', 'modifier') ? gvb_bouton('Enregistrer') : '') . '</form></div>';
     gvb_fin();
 }
