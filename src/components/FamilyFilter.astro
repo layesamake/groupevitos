@@ -1,0 +1,19 @@
+---
+// Filtre du catalogue par famille de formations : masque les cartes dont data-family ne correspond pas.
+interface Props { target: string; families: { slug: string; name: string }[] }
+const { target, families } = Astro.props;
+---
+{families.length > 1 && <div class="filters" role="group" aria-label="Filtrer par famille de formations" data-family-filter={target}>
+  <button type="button" aria-pressed="true" data-family="">Toutes</button>
+  {families.map(family => <button type="button" aria-pressed="false" data-family={family.slug}>{family.name}</button>)}
+</div>}
+<script>
+  document.querySelectorAll<HTMLElement>('[data-family-filter]').forEach(group => {
+    const buttons = group.querySelectorAll<HTMLButtonElement>('button');
+    const cards = document.querySelectorAll<HTMLElement>(`${group.dataset.familyFilter} [data-family]`);
+    buttons.forEach(button => button.addEventListener('click', () => {
+      buttons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+      cards.forEach(card => { card.hidden = !!button.dataset.family && card.dataset.family !== button.dataset.family; });
+    }));
+  });
+</script>

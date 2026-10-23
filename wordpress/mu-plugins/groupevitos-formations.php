@@ -8,6 +8,11 @@ if (!defined('ABSPATH')) exit;
 
 // Champs d'une formation : clé => [libellé, type de saisie]
 const GROUPEVITOS_FORMATION_FIELDS = [
+    'reference' => ['Référence du catalogue (01 à 17)', 'text'],
+    'sigle' => ['Sigle (ex. MSS, MPD, DPR)', 'text'],
+    'diplomes' => ['Diplômes rattachés (DUT, Licence, Master) — à renseigner après validation de l’établissement', 'text'],
+    'variantes' => ['Autres intitulés relevés sur d’anciens supports', 'text'],
+    'validation' => ['Fiche : « catalogue » (intitulé seul) ou « validee » (détails confirmés)', 'text'],
     'niveau' => ['Niveau', 'text'],
     'duree' => ['Durée', 'text'],
     'parcours' => ['Parcours (niveaux, durées, objectifs)', 'html'],

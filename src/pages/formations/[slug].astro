@@ -2,17 +2,19 @@
 import Base from '../../layouts/Base.astro';
 import PageHero from '../../components/PageHero.astro';
 import FormationCard from '../../components/FormationCard.astro';
-import { getContent, pageBySlug, pathOf, type Formation } from '../../lib/wordpress';
-import { featured, plain, publicLinks } from '../../lib/html';
+import { familleOf, getContent, pageBySlug, pathOf, type Formation } from '../../lib/wordpress';
+import { institut } from '../../lib/institut';
+import { featured, image, plain, publicLinks } from '../../lib/html';
 import { listItems, tableRows } from '../../lib/extract';
 export async function getStaticPaths() {
   const { formations } = await getContent();
   return formations.map((formation, index) => ({ params: { slug: formation.slug }, props: { formation, index } }));
 }
 const { formation, index } = Astro.props as { formation: Formation; index: number };
-const { formations, pages } = await getContent();
+const { formations, pages, media } = await getContent();
 const { meta } = formation;
-const img = featured(formation, '');
+const img = featured(formation, '') ?? image(media[({ 'gestion-finance': 'banque.avif', 'management-marketing': 'rh.avif', 'droit-relations-internationales': 'fiscalite_1.avif', 'commerce-logistique': 'logistique.webp', 'communication-numerique': 'F89A7166-scaled-1.avif', 'developpement-secteurs-specialises': 'F89A7161-scaled-1.avif' } as Record<string, string>)[familleOf(formation)?.slug ?? ''] ?? 'etudiants.avif'], '');
+const famille = familleOf(formation);
 const admission = pageBySlug(pages, 'admission');
 const contacts = pageBySlug(pages, 'contacts');
 const applyHref = admission ? pathOf(admission) : contacts ? pathOf(contacts) : '/';
@@ -40,7 +42,7 @@ const sections = [
 const others = formations.filter(other => other.id !== formation.id);
 ---
 <Base title={formation.title.rendered} description={plain(formation.content.rendered).slice(0, 160)} image={img?.src} cta={{ label: 'Candidater à cette formation', href: applyHref }}>
-  <PageHero title={formation.title.rendered} kicker={`Formation ${String(index + 1).padStart(2, '0')}`} img={img}>
+  <PageHero title={formation.title.rendered} kicker={`Formation ${meta.reference || String(index + 1).padStart(2, '0')}${famille ? ` · ${famille.name}` : ''}`} img={img}>
     {durations.length > 0 && <div class="durations">{durations.map(d => <div><small>{d.level}</small><strong>{d.duration}</strong></div>)}</div>}
   </PageHero>
 
@@ -48,6 +50,11 @@ const others = formations.filter(other => other.id !== formation.id);
 
   <div class="wrap formation-layout">
     <article class="formation">
+      {sections.length === 0 && <section id="catalogue">
+        <h2>{formation.title.rendered}{meta.sigle && ` (${meta.sigle})`}</h2>
+        <p>Cette formation fait partie du catalogue de l’Université VITO S.{famille && <> Elle relève du domaine « {famille.name} ».</>}</p>
+        <p class="note">Le diplôme concerné ({institut.levels.join(', ')}), la durée, les conditions d’accès et les débouchés sont en cours de validation par l’établissement. Contactez le service admission pour connaître les niveaux ouverts et le dossier à fournir.</p>
+      </section>}
       {sections.some(s => s.id === 'objectifs') && <section id="objectifs"><h2>Objectifs</h2><div class="prose" set:html={publicLinks(formation.content.rendered)} /></section>}
       {parcours.length > 0 && <section id="parcours">
         <h2>Un parcours en {parcours.length} marche{parcours.length > 1 ? 's' : ''}</h2>

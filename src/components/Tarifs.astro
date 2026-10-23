@@ -1,0 +1,26 @@
+---
+// Tarifs d'un pôle : cartes par niveau ou classe, puis frais complémentaires séparés. Les barèmes non millésimés portent un avertissement.
+import { fcfa } from '../lib/referentiel';
+import type { Tarif } from '../lib/wordpress';
+interface Props { scolarite: Tarif[]; complements: Tarif[]; university?: boolean }
+const { scolarite, complements, university = false } = Astro.props;
+const outdated = scolarite.some(t => t.meta.statut === 'a_actualiser');
+const period = scolarite.find(t => t.meta.periode)?.meta.periode;
+---
+{scolarite.length > 0 && <>
+  {period && <p class="note">Tarifs de la rentrée <strong>{period}</strong>. Les totaux de scolarité incluent l’inscription ; ils sont présentés ventilés par échéance.</p>}
+  {outdated && <p class="note note--warn">Barème indicatif : le support dont il est tiré n’indique pas d’année. Confirmez le tarif en vigueur auprès de l’admission avant tout paiement.</p>}
+  <div class="fees">{scolarite.map(t => <article>
+    <h3 set:html={t.title.rendered} />
+    <strong>{fcfa(t.meta.total)}</strong>
+    {university
+      ? <p>Inscription {fcfa(t.meta.inscription)} · Scolarité {fcfa(t.meta.scolarite)}</p>
+      : <p>Inscription {fcfa(t.meta.inscription)} · Décembre {fcfa(t.meta.decembre)} · Mars {fcfa(t.meta.mars)}</p>}
+  </article>)}</div>
+  {!university && <p class="note">Tous les paiements doivent être effectués au plus tard le <strong>5 mars 2027</strong>.</p>}
+</>}
+{complements.length > 0 && <>
+  <h3 class="fees-title">Autres frais</h3>
+  <ul class="fees-list">{complements.map(t => <li><span set:html={t.title.rendered} /><strong>{fcfa(t.meta.total)}</strong>{t.meta.note && <small>{t.meta.note}</small>}</li>)}</ul>
+  {!university && <p class="note">Ces frais sont distincts du total de scolarité.</p>}
+</>}

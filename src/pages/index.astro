@@ -2,39 +2,44 @@
 import Base from '../layouts/Base.astro';
 import Eyebrow from '../components/Eyebrow.astro';
 import FormationCard from '../components/FormationCard.astro';
-import LevelFilter from '../components/LevelFilter.astro';
+import FamilyFilter from '../components/FamilyFilter.astro';
 import Picture from '../components/Picture.astro';
 import Icon from '../components/Icon.astro';
-import { getContent, pageBySlug, pathOf } from '../lib/wordpress';
-import { image, plain } from '../lib/html';
-import { figures, links, listItems, section, stairLines, steps, tableRows } from '../lib/extract';
+import { familiesOf, getContent, pageBySlug, pathOf } from '../lib/wordpress';
+import { featured, image, plain } from '../lib/html';
+import { figures, listItems, section, stairLines, steps } from '../lib/extract';
 import { institut } from '../lib/institut';
+import { POLES, ofType, telHref } from '../lib/referentiel';
 
-const { available, site, pages, formations, media } = await getContent();
+const { available, site, pages, formations, partenaires, coordonnees, identite, media } = await getContent();
 const page = (slug: string) => pageBySlug(pages, slug);
 const byFile = (url: string) => media[url.split('/').pop()!];
 
-const slogan = plain(site.description) || 'Bâtissons ensemble les cadres de demain';
-const lines = stairLines(slogan.replace(/\.$/, ''));
+const slogan = plain(site.description) || identite.devise.replace(/[.!]$/, '');
+const lines = stairLines(slogan.replace(/[.!]$/, ''));
 const students = image(media['etudiants.avif'], 'Étudiantes et étudiants de l’Institut VITO S. en uniforme');
 
 const home = page('accueil')?.content.rendered ?? '';
 const why = listItems(section(home, /pourquoi/i));
-const partners = figures(section(home, /partenaires/i));
 
 const admission = page('admission');
 const admissionSteps = steps(admission?.content.rendered ?? '').slice(0, 3);
-const firstYear = tableRows(admission?.content.rendered ?? '').find(row => /licence\s*1/i.test(plain(row[0] ?? '')))?.map(plain);
 
 const galerie = page('galeries');
 const photos = figures(galerie?.content.rendered ?? '');
 const mosaic = [photos.find(p => /dipl/i.test(p.caption)), photos.find(p => /cultur/i.test(p.caption)), photos.filter(p => /dipl/i.test(p.caption))[3], photos.filter(p => /cultur/i.test(p.caption))[1]].filter(Boolean) as typeof photos;
 
 const contactsPage = page('contacts');
-const contacts = links(contactsPage?.content.rendered ?? '');
 const address = contactsPage?.content.rendered.match(/<p[^>]*>[^<]*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
-const phone = contacts.find(link => link.href.startsWith('tel:'));
-const email = contacts.find(link => link.href.startsWith('mailto:'));
+const phone = ofType(coordonnees, 'telephone')[0];
+const email = ofType(coordonnees, 'email')[0];
+const poles = POLES.filter(pole => page(pole.slug));
+const reperes = [
+  { value: '2009', label: 'Création, agrément de l’État' },
+  { value: String(POLES.length), label: 'Pôles : Université, Lycée, ITP' },
+  ...(formations.length ? [{ value: String(formations.length), label: 'Formations au catalogue universitaire' }] : []),
+  { value: '3', label: 'Diplômes universitaires : DUT, Licence, Master' },
+];
 ---
 <Base>
   <section class="hero">
@@ -44,8 +49,8 @@ const email = contacts.find(link => link.href.startsWith('mailto:'));
         <h1 aria-label={slogan}>{lines.map((line, i) => <span aria-hidden="true">{line}{i === lines.length - 1 ? '.' : ''}</span>)}</h1>
         <p class="hero__lead">{available ? institut.lead : 'Notre nouveau site arrive très bientôt.'}</p>
         <div class="hero__actions">
-          {formations.length > 0 && <a class="btn btn--mango" href="/formations/">Trouver ma formation <span aria-hidden="true">→</span></a>}
-          {admission && <a class="btn btn--ghost" href={pathOf(admission)}>Candidater</a>}
+          {poles.length > 0 && <a class="btn btn--mango" href="#poles">Choisir mon pôle <span aria-hidden="true">→</span></a>}
+          {admission && <a class="btn btn--ghost" href={pathOf(admission)}>Admissions et frais</a>}
         </div>
       </div>
       <div class="hero__visual" aria-hidden="true">
@@ -62,22 +67,29 @@ const email = contacts.find(link => link.href.startsWith('mailto:'));
 
   <div class="ticker" aria-hidden="true"><div class="ticker__track">{[...institut.ticker, ...institut.ticker, ...institut.ticker, ...institut.ticker].map(item => <span>{item}</span>)}</div></div>
 
-  {formations.length > 0 && <section class="section" id="formations">
+  {poles.length > 0 && <section class="section" id="poles">
+    <div class="wrap">
+      <div class="section__head"><Eyebrow number="01">Nos pôles</Eyebrow><h2>Trois pôles, un seul groupe</h2></div>
+      <div class="poles">{poles.map(pole => <a class="pole" href={pole.path}><h3>{pole.name}</h3><p>{pole.lead}</p><span class="pole__more">Découvrir →</span></a>)}</div>
+    </div>
+  </section>}
+
+  {formations.length > 0 && <section class="section section--white" id="formations">
     <div class="wrap">
       <div class="section__head section__head--row">
-        <div class="section__head"><Eyebrow number="01">Formations</Eyebrow><h2>Trouvez votre voie</h2></div>
-        <LevelFilter target="#cartes-accueil" />
+        <div class="section__head"><Eyebrow number="02">Université</Eyebrow><h2>Trouvez votre voie</h2></div>
+        <FamilyFilter target="#cartes-accueil" families={familiesOf(formations)} />
       </div>
       <div class="cards" id="cartes-accueil">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
       <a class="btn btn--outline btn--wide more-link" href="/formations/">Voir les {formations.length} formations <span aria-hidden="true">→</span></a>
     </div>
   </section>}
 
-  {why.length > 0 && <section class="section section--white">
+  {why.length > 0 && <section class="section">
     <div class="wrap why">
       <Picture class="why__image stepped" img={image(media['F89A7161-scaled-1.avif'], 'Étudiants en cours à l’Institut VITO S.')} sizes="(min-width: 900px) 50vw, 100vw" />
       <div>
-        <div class="section__head"><Eyebrow number="02">Pourquoi nous</Eyebrow><h2>Chaque marche vous rapproche du métier</h2></div>
+        <div class="section__head"><Eyebrow number="03">Pourquoi nous</Eyebrow><h2>Chaque marche vous rapproche du métier</h2></div>
         <ol class="steps-list">
           {why.slice(0, 4).map((item, index) => <li><span class="steps-list__num">{index + 1}</span><div><h3>{item.title || item.text}</h3>{item.title && <p>{item.text}</p>}</div></li>)}
         </ol>
@@ -86,46 +98,44 @@ const email = contacts.find(link => link.href.startsWith('mailto:'));
   </section>}
 
   <section class="section section--night" aria-label="Repères">
-    <div class="wrap figures">{institut.reperes.map(item => <div><strong>{item.value}</strong><span>{item.label}</span></div>)}</div>
+    <div class="wrap figures">{reperes.map(item => <div><strong>{item.value}</strong><span>{item.label}</span></div>)}</div>
   </section>
 
   {admission && <section class="section" id="admission">
     <div class="wrap admission">
       <div>
-        <div class="section__head"><Eyebrow number="03">Admission</Eyebrow><h2>Candidater en {admissionSteps.length || 3} marches</h2></div>
+        <div class="section__head"><Eyebrow number="04">Admissions</Eyebrow><h2>Candidater en {admissionSteps.length || 3} marches</h2></div>
         {admissionSteps.length === 3 && <ol class="stairs">{admissionSteps.map(step => <li><b>{step.number}</b><span>{step.title}</span></li>)}</ol>}
       </div>
       <div class="admission__side">
-        {firstYear && <div class="price">
-          <p class="price__label">Frais annuels — {firstYear[0]}</p>
-          <p class="price__value">{firstYear[3]}</p>
-          <p>dont {firstYear[1]} d’inscription et {firstYear[2]} de scolarité.</p>
-        </div>}
-        <a class="btn btn--night btn--wide" href={pathOf(admission)}>Pièces à fournir et tous les frais <span aria-hidden="true">→</span></a>
+        <p class="note">Chaque pôle a son dossier, ses tarifs et son contact : choisissez le vôtre.</p>
+        <a class="btn btn--night btn--wide" href={pathOf(admission)}>Pièces à fournir et frais par pôle <span aria-hidden="true">→</span></a>
       </div>
     </div>
   </section>}
 
-  {mosaic.length > 0 && <section class="section section--white">
+  {(mosaic.length > 0 || partenaires.length > 0) && <section class="section section--white">
     <div class="wrap">
-      <div class="section__head"><Eyebrow number="04">Vie étudiante</Eyebrow><h2>La vie à VITO S.</h2></div>
-      <div class="mosaic">
-        {mosaic.map(photo => <Picture img={image(byFile(photo.src), photo.caption)} sizes="(min-width: 900px) 25vw, 50vw" />)}
-        {galerie && <a class="mosaic__more" href={pathOf(galerie)}>Voir les {photos.length} photos <span aria-hidden="true">→</span></a>}
-      </div>
-      {partners.length > 0 && <div class="partners">
+      {mosaic.length > 0 && <>
+        <div class="section__head"><Eyebrow number="05">Vie étudiante</Eyebrow><h2>La vie à VITO S.</h2></div>
+        <div class="mosaic">
+          {mosaic.map(photo => <Picture img={image(byFile(photo.src), photo.caption)} sizes="(min-width: 900px) 25vw, 50vw" />)}
+          {galerie && <a class="mosaic__more" href={pathOf(galerie)}>Voir les {photos.length} photos <span aria-hidden="true">→</span></a>}
+        </div>
+      </>}
+      {partenaires.length > 0 && <div class="partners">
         <p class="partners__label">Nos partenaires</p>
-        {partners.map(partner => <figure><Picture img={image(byFile(partner.src), partner.alt)} sizes="104px" /></figure>)}
+        {partenaires.map(partner => { const logo = featured(partner, partner.title.rendered); return <figure>{logo ? <Picture img={logo} sizes="104px" /> : <figcaption set:html={partner.meta.sigle || partner.title.rendered} />}</figure>; })}
       </div>}
     </div>
   </section>}
 
-  {contacts.length > 0 && <section class="section section--cobalt">
+  {(phone || email) && <section class="section section--cobalt">
     <div class="wrap contact">
       <h2>Une question ?<br />Parlons-en.</h2>
       <div class="contact__list">
-        {phone && <a class="contact__item" href={phone.href}><Icon name="phone" /><span><strong>Appeler {phone.label}</strong><span>{phone.text}</span></span></a>}
-        {email && <a class="contact__item" href={email.href}><Icon name="mail" /><span><strong>Écrire un e-mail</strong><span>{email.text}</span></span></a>}
+        {phone && <a class="contact__item" href={telHref(phone.meta.valeur)}><Icon name="phone" /><span><strong>Appeler {phone.meta.usage}</strong><span>{phone.meta.valeur}</span></span></a>}
+        {email && <a class="contact__item" href={`mailto:${email.meta.valeur}`}><Icon name="mail" /><span><strong>Écrire un e-mail</strong><span>{email.meta.valeur}</span></span></a>}
         {address && <a class="contact__item" href={address[1]}><Icon name="pin" /><span><strong>Itinéraire</strong><span>{plain(address[2])}</span></span></a>}
       </div>
     </div>

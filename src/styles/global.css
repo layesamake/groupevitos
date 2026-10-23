@@ -324,3 +324,36 @@ button { font: inherit; }
 .footer__links { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
 .footer__legal { padding-block: 1.25rem; border-top: 1px solid rgba(255, 255, 255, .15); font-size: .8rem; }
 @media (min-width: 900px) { .footer__grid { grid-template-columns: 2fr 1fr 1.4fr; } }
+
+/* Référentiel : pôles, tarifs, notes, partenaires */
+.poles { display: grid; gap: 14px; }
+@media (min-width: 760px) { .poles { grid-template-columns: repeat(3, 1fr); } }
+.pole { display: flex; flex-direction: column; gap: .5rem; padding: 1.3rem; border-radius: 22px; background: var(--white); border: 1px solid var(--line); color: inherit; transition: transform .2s, box-shadow .2s; }
+.pole:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(10, 20, 51, .12); }
+.pole:nth-child(2) { background: var(--cobalt); color: var(--white); border-color: transparent; }
+.pole:nth-child(3) { background: var(--night); color: var(--white); border-color: transparent; }
+.pole h3 { font-size: 1.5rem; line-height: 1.05; }
+.pole p { font-size: .95rem; opacity: .85; }
+.pole__more { margin-top: auto; padding-top: .6rem; font-weight: 700; }
+.note { max-width: 46rem; margin: 0 0 1rem; padding: .8rem 1rem; border-left: 4px solid var(--cobalt); background: var(--mist); border-radius: 0 12px 12px 0; font-size: .95rem; }
+.note--warn { border-left-color: var(--mango); }
+.fees-title { margin: 1.6rem 0 .6rem; }
+.fees-list { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 8px; max-width: 46rem; }
+.fees-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: .8rem 1rem; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+.fees-list small { flex-basis: 100%; color: var(--muted); }
+.pole-block { display: grid; gap: 1.2rem; }
+.pole-block + .pole-block { margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--line); }
+.partner-names { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; margin: 0; padding: 0; }
+.partner-names li { display: grid; place-items: center; align-content: center; gap: 6px; min-width: 150px; min-height: 96px; padding: 12px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; text-align: center; font-weight: 700; }
+.partner-names img { max-height: 54px; width: auto; object-fit: contain; }
+.partner-names small { font-weight: 400; color: var(--muted); }
+.motto { font-family: var(--display); font-size: clamp(1.4rem, 5vw, 2.2rem); line-height: 1.1; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.timeline li { display: flex; gap: 14px; padding: 14px 16px; background: var(--mist); border-radius: 16px; }
+.timeline strong { flex: 0 0 4.2rem; font-family: var(--display); font-size: 1.3rem; color: var(--cobalt); }
+.socials { display: flex; flex-wrap: wrap; gap: 8px; }
+.socials a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border-radius: 999px; border: 2px solid currentColor; font-weight: 700; }
+.fees p { grid-column: 1 / -1; font-size: .9rem; color: var(--muted); }
+.partners figure:has(figcaption) { width: auto; min-width: 104px; padding: 10px 14px; }
+.partners figcaption { font-weight: 700; font-size: .8rem; text-align: center; }
+.durations-line { margin-top: 1rem; font-size: 1.1rem; }

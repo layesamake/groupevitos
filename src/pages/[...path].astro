@@ -4,62 +4,50 @@ import PageHero from '../components/PageHero.astro';
 import Picture from '../components/Picture.astro';
 import Icon from '../components/Icon.astro';
 import Eyebrow from '../components/Eyebrow.astro';
-import { getContent, pageBySlug, pathOf, type Entry } from '../lib/wordpress';
+import FormationCard from '../components/FormationCard.astro';
+import FamilyFilter from '../components/FamilyFilter.astro';
+import Tarifs from '../components/Tarifs.astro';
+import { familiesOf, getContent, pageBySlug, pathOf, type Entry } from '../lib/wordpress';
 import { featured, image, plain, publicLinks } from '../lib/html';
-import { figures, links, listItems, section, steps, tableRows } from '../lib/extract';
+import { figures, listItems } from '../lib/extract';
+import { POLES, contactsFor, dossierFor, identityLines, ofType, tarifsFor, telHref } from '../lib/referentiel';
 export async function getStaticPaths() {
   const { pages } = await getContent();
   return pages.filter(page => page.slug !== 'accueil' && pathOf(page) !== '/').map(page => ({ params: { path: pathOf(page).replace(/^\/|\/$/g, '') }, props: { page } }));
 }
 const { page } = Astro.props as { page: Entry };
-const { media, pages } = await getContent();
+const { media, pages, formations, tarifs, dossiers, coordonnees, partenaires, identite } = await getContent();
 const html = publicLinks(page.content.rendered);
 const byFile = (url: string) => media[url.split('/').pop()!];
+const slug = page.slug;
 // Photo de bandeau : image mise en avant de la page, sinon une photo de l'établissement
-const heroFile = ({ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'F89A7166-scaled-1.avif' } as Record<string, string>)[page.slug];
+const heroFile = ({ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'F89A7166-scaled-1.avif', universite: 'formations-hero.avif', lycee: 'F89A7161-scaled-1.avif', itp: 'F89A7166-scaled-1.avif', partenaires: 'graduation-1.jpg' } as Record<string, string>)[slug];
 const hero = featured(page, '') ?? (heroFile ? image(media[heroFile], '') : undefined);
 
-// Admission : étapes, pièces à fournir et frais mis en forme ; le reste du contenu reste affiché tel quel
-const admissionSteps = page.slug === 'admission' ? steps(html) : [];
-const documents = page.slug === 'admission' ? listItems(section(html, /dossiers|pi[eè]ces/i)).map(item => item.text) : [];
-const fees = page.slug === 'admission' ? tableRows(html).map(row => row.map(plain)).filter(row => row.length >= 4) : [];
-const intro = page.slug === 'admission' ? html.split(/<h2/)[0] + (html.match(/<h2[^>]*>[\s\S]*?<\/h2>\s*(<p>[\s\S]*?<\/p>)/)?.[1] ?? '') : '';
-const structuredAdmission = admissionSteps.length > 0 && fees.length > 0;
+const pole = POLES.find(p => p.slug === slug);
+const isPole = !!pole;
+const blocks = POLES.map(p => ({ pole: p, dossier: dossierFor(dossiers, p.slug), ...tarifsFor(tarifs, p.slug), phones: contactsFor(coordonnees, p.slug) }));
+const mine = pole ? blocks.find(b => b.pole.slug === pole.slug)! : undefined;
+const email = ofType(coordonnees, 'email')[0];
+const socials = ofType(coordonnees, 'reseau');
+const phonesAll = ofType(coordonnees, 'telephone');
+const address = ofType(coordonnees, 'adresse')[0]?.meta.valeur ?? identite.adresse;
 
 // Galerie : catégories tirées des légendes
-const photos = page.slug === 'galeries' ? figures(html) : [];
+const photos = slug === 'galeries' ? figures(html) : [];
 const categories = [...new Set(photos.map(photo => photo.caption).filter(Boolean))];
 
-// Contacts et inscription : boutons d'action
+// Contacts : lien d'itinéraire et plan saisis dans la page WordPress
 const contactPage = pageBySlug(pages, 'contacts');
-const contactLinks = links(contactPage?.content.rendered ?? '');
-const address = contactPage?.content.rendered.match(/<p[^>]*>[^<]*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+const route = contactPage?.content.rendered.match(/<p[^>]*>[^<]*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/)?.[1];
 const map = contactPage?.content.rendered.match(/<iframe[^>]*src="([^"]+)"/)?.[1];
-const showContacts = page.slug === 'contacts' || page.slug === 'inscription';
+const pieces = (block?: { dossier?: { meta: { pieces: string } } }) => listItems(block?.dossier?.meta.pieces ?? '').map(item => item.text);
+const reperes = identityLines(identite.reperes).map(line => { const [year, ...text] = line.split('|'); return { year: year.trim(), text: text.join('|').trim() }; });
 ---
-<Base title={page.title.rendered} description={plain(page.excerpt.rendered)} image={hero?.src}>
-  <PageHero title={page.title.rendered} img={hero} />
+<Base title={page.title.rendered} description={plain(page.excerpt.rendered) || plain(page.content.rendered).slice(0, 160)} image={hero?.src}>
+  <PageHero title={page.title.rendered} img={hero} kicker={isPole ? 'Groupe VITO S.' : undefined} />
 
-  {structuredAdmission ? <>
-    <section class="section">
-      <div class="wrap admission">
-        <div class="prose" set:html={intro} />
-        <ol class="steps-list">{admissionSteps.map(step => <li><span class="steps-list__num">{step.number}</span><div><h3>{step.title}</h3>{step.text && <p>{step.text}</p>}</div></li>)}</ol>
-      </div>
-    </section>
-    {documents.length > 0 && <section class="section section--white">
-      <div class="wrap">
-        <div class="section__head"><Eyebrow>Dossier</Eyebrow><h2>Pièces à fournir</h2></div>
-        <ul class="checklist">{documents.map(doc => <li><Icon name="check" />{doc}</li>)}</ul>
-      </div>
-    </section>}
-    <section class="section">
-      <div class="wrap">
-        <div class="section__head"><Eyebrow>Frais</Eyebrow><h2>Frais de formation annuels</h2></div>
-        <div class="fees">{fees.map(([year, signup, tuition, total]) => <article><h3>{year}</h3><strong>{total}</strong><p>Inscription {signup} · Scolarité {tuition}</p></article>)}</div>
-      </div>
-    </section>
-  </> : page.slug === 'galeries' && photos.length ? (
+  {slug === 'galeries' && photos.length ? (
     <section class="section">
       <div class="wrap">
         {categories.length > 1 && <div class="filters" role="group" aria-label="Filtrer les photos" data-gallery-filter>
@@ -69,16 +57,99 @@ const showContacts = page.slug === 'contacts' || page.slug === 'inscription';
         <div class="gallery">{photos.map((photo, index) => <figure data-category={photo.caption}><Picture img={image(byFile(photo.src), photo.alt || photo.caption)} sizes={index % 5 === 0 ? '(min-width: 900px) 50vw, 100vw' : '(min-width: 900px) 25vw, 50vw'} />{photo.caption && <figcaption>{photo.caption}</figcaption>}</figure>)}</div>
       </div>
     </section>
-  ) : (
+  ) : isPole && mine ? <>
     <section class="section">
       <div class="wrap">
-        {page.slug !== 'contacts' && <article class="prose" set:html={html} />}
-        {showContacts && contactLinks.length > 0 && <div class="contact__list" style="margin-top: 1.5rem">
-          {contactLinks.map((link, i) => <a class="contact__item" href={link.href}><Icon name={link.href.startsWith('mailto:') ? 'mail' : 'phone'} /><span><strong>{link.href.startsWith('mailto:') ? 'Écrire un e-mail' : `Appeler ${link.label}`}</strong><span>{link.text}</span></span></a>)}
-          {address && <a class="contact__item" href={address[1]}><Icon name="pin" /><span><strong>Itinéraire</strong><span>{plain(address[2])}</span></span></a>}
-        </div>}
-        {page.slug === 'contacts' && map && <iframe class="map" src={map} title="Plan d’accès à l’Institut VITO S." loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>}
+        <article class="prose" set:html={html} />
+        {slug === 'universite' && <p class="durations-line"><strong>DUT · Licence · Master</strong></p>}
       </div>
+    </section>
+    {slug === 'universite' && formations.length > 0 && <section class="section section--white" id="catalogue">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow>Catalogue</Eyebrow><h2>{formations.length} formations</h2></div>
+        <FamilyFilter target="#cartes-universite" families={familiesOf(formations)} />
+        <div class="cards cards--grid" id="cartes-universite">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
+      </div>
+    </section>}
+    <section class="section" id="admission">
+      <div class="wrap pole-block">
+        <div class="section__head"><Eyebrow>Admission</Eyebrow><h2>Pièces à fournir</h2></div>
+        {pieces(mine).length > 0 ? <ul class="checklist">{pieces(mine).map(doc => <li><Icon name="check" />{doc}</li>)}</ul> : <p>Contactez le service admission pour connaître le dossier à fournir.</p>}
+        {mine.dossier?.meta.note && <div class="note" set:html={mine.dossier.meta.note} />}
+        {mine.dossier?.meta.annee && <p class="note">{mine.dossier.meta.annee}</p>}
+      </div>
+    </section>
+    <section class="section section--white" id="tarifs">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow>Frais</Eyebrow><h2>Tarifs</h2></div>
+        <Tarifs scolarite={mine.scolarite} complements={mine.complements} university={slug === 'universite'} />
+      </div>
+    </section>
+    <section class="section section--cobalt">
+      <div class="wrap contact">
+        <h2>Contacter {pole!.short === 'Université' ? 'l’Université' : `le ${pole!.short}`}</h2>
+        <div class="contact__list">
+          {mine.phones.map(c => <a class="contact__item" href={telHref(c.meta.valeur)}><Icon name="phone" /><span><strong>Appeler {c.meta.usage}</strong><span>{c.meta.valeur}</span></span></a>)}
+          {email && <a class="contact__item" href={`mailto:${email.meta.valeur}`}><Icon name="mail" /><span><strong>Écrire un e-mail</strong><span>{email.meta.valeur}</span></span></a>}
+        </div>
+      </div>
+    </section>
+  </> : slug === 'admission' ? <>
+    <section class="section">
+      <div class="wrap admission"><article class="prose" set:html={html} /></div>
+    </section>
+    {blocks.map(block => <section class="section" class:list={{ 'section--white': block.pole.slug === 'lycee' }} id={block.pole.slug}>
+      <div class="wrap pole-block">
+        <div class="section__head"><Eyebrow>{block.pole.short}</Eyebrow><h2>{block.pole.name}</h2></div>
+        {pieces(block).length > 0 && <><h3>Pièces à fournir{block.dossier?.meta.annee && ` — ${block.dossier.meta.annee}`}</h3><ul class="checklist">{pieces(block).map(doc => <li><Icon name="check" />{doc}</li>)}</ul></>}
+        {block.dossier?.meta.note && <div class="note" set:html={block.dossier.meta.note} />}
+        <h3>Tarifs</h3>
+        <Tarifs scolarite={block.scolarite} complements={block.complements} university={block.pole.slug === 'universite'} />
+        <p><a class="btn btn--outline" href={block.pole.path}>Tout sur le {block.pole.short === 'Université' ? 'pôle Université' : `pôle ${block.pole.short}`} →</a></p>
+      </div>
+    </section>)}
+  </> : slug === 'inscription' ? <>
+    <section class="section">
+      <div class="wrap"><article class="prose" set:html={html} />
+        <div class="poles">{blocks.map(block => <article class="pole">
+          <h3>{block.pole.name}</h3><p>{block.pole.lead}</p>
+          {block.phones[0] && <a href={telHref(block.phones[0].meta.valeur)}>{block.phones[0].meta.valeur}</a>}
+          <a class="pole__more" href={`/admission/#${block.pole.slug}`}>Dossier et tarifs →</a>
+        </article>)}</div>
+      </div>
+    </section>
+  </> : slug === 'partenaires' ? <>
+    <section class="section">
+      <div class="wrap">
+        <article class="prose" set:html={html} />
+        {partenaires.length > 0 && <ul class="partner-names">{partenaires.map(p => { const logo = featured(p, p.title.rendered); return <li>{logo && <Picture img={logo} sizes="150px" />}<span set:html={p.title.rendered} />{p.meta.sigle && !logo && <small>{p.meta.sigle}</small>}{p.meta.note && p.meta.note.startsWith('Campus') && <small>{p.meta.note}</small>}</li>; })}</ul>}
+      </div>
+    </section>
+  </> : slug === 'contacts' ? <>
+    <section class="section">
+      <div class="wrap pole-block">
+        <div class="contact__list">
+          {phonesAll.map(c => <a class="contact__item" href={telHref(c.meta.valeur)}><Icon name="phone" /><span><strong>{c.meta.usage}</strong><span>{c.meta.valeur}</span></span></a>)}
+          {email && <a class="contact__item" href={`mailto:${email.meta.valeur}`}><Icon name="mail" /><span><strong>Écrire un e-mail</strong><span>{email.meta.valeur}</span></span></a>}
+          <a class="contact__item" href={route ?? '#'}><Icon name="pin" /><span><strong>Itinéraire</strong><span>{address}</span></span></a>
+        </div>
+        {socials.length > 0 && <div class="socials">{socials.map(c => <a href={c.meta.valeur} rel="noopener" target="_blank">{c.meta.usage}</a>)}</div>}
+        {map && <iframe class="map" src={map} title="Plan d’accès à l’Institut VITO S." loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>}
+      </div>
+    </section>
+  </> : slug === 'a-propos' ? <>
+    <section class="section">
+      <div class="wrap pole-block">
+        <p class="motto">{identite.devise}</p>
+        <article class="prose" set:html={html} />
+        <p class="note">{identite.reconnaissance}</p>
+        {reperes.length > 0 && <><h3>Repères</h3><ul class="timeline">{reperes.map(r => <li><strong>{r.year || '—'}</strong><span>{r.text}</span></li>)}</ul></>}
+        <p>{identityLines(identite.signatures).join(' · ')}</p>
+      </div>
+    </section>
+  </> : (
+    <section class="section">
+      <div class="wrap"><article class="prose" set:html={html} /></div>
     </section>
   )}
 

@@ -32,7 +32,22 @@ HOSTINGER_API_TOKEN=... node scripts/installer-mu-plugins.mjs
 ```
 
 - `groupevitos-headless.php` : reconstruction du site, réglage du jeton GitHub (Réglages → Site public), redirection du front WordPress
-- `groupevitos-formations.php` : type de contenu « Formations » et ses champs (`niveau`, `duree`, `parcours`, `admission`, `finalite`, `enseignements`, `competences`, `methodes`, `debouches`, `carriere`), exposés dans l'API REST
+- `groupevitos-formations.php` : type de contenu « Formations » et ses champs (`reference`, `sigle`, `diplomes`, `variantes`, `validation`, `niveau`, `duree`, `parcours`, `admission`, `finalite`, `enseignements`, `competences`, `methodes`, `debouches`, `carriere`), exposés dans l'API REST
+- `groupevitos-contenus.php` : référentiel — types **Tarifs**, **Dossiers d'admission**, **Coordonnées**, **Partenaires**, **Promotions** (registre privé), taxonomie **Familles de formations**, et page *Réglages → Groupe VITOS* (identité, devise, repères historiques) lue par le site via `/wp-json/groupevitos/v1/identite`
+
+## Référentiel des contenus (mise à jour du 23 octobre 2026)
+
+Source : `docs/GroupeVITOS_donnees_structurees_site.md`. Les données sont dans `scripts/contenus-referentiel.mjs` et se poussent dans WordPress (idempotent, sans suppression) :
+
+```bash
+WP_USER=... WP_APP_PASSWORD=... node scripts/mettre-a-jour-contenus.mjs            # simulation
+WP_USER=... WP_APP_PASSWORD=... node scripts/mettre-a-jour-contenus.mjs --appliquer
+```
+
+- **Publié** = affiché sur le site. **Brouillon / privé** = conservé pour validation : coordonnées anciennes, moyen de paiement, formations à confirmer (Mines et géologie, Agro-business…), partenaires à préciser, promotions (jamais affichées comme actives).
+- Pôles : pages `/universite/`, `/lycee/`, `/itp/` (pièces, tarifs, contacts du pôle) ; `/admission/` réunit les trois ; `/partenaires/`, `/contacts/`, `/a-propos/` (« Le Groupe »).
+- Barème universitaire marqué « à actualiser » (support non millésimé) : il est affiché avec un avertissement. Tarifs Lycée et ITP : rentrée 2026–2027.
+- Données à valider avant d'aller plus loin : voir la fin du document source.
 
 ## Reprise de l'ancien site
 

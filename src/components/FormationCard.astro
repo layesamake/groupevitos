@@ -1,21 +1,30 @@
 ---
 import Picture from './Picture.astro';
-import type { Formation } from '../lib/wordpress';
-import { featured } from '../lib/html';
+import { familleOf, getContent, type Formation } from '../lib/wordpress';
+import { featured, image } from '../lib/html';
 import { institut } from '../lib/institut';
 const { formation, index } = Astro.props as { formation: Formation; index: number };
-const text = `${formation.meta.niveau} ${formation.meta.parcours}`;
+const { media } = await getContent();
+const famille = familleOf(formation);
+// Photo de repli par famille tant qu'une photo propre à la formation n'est pas ajoutée dans WordPress
+const fallback: Record<string, string> = {
+  'gestion-finance': 'banque.avif', 'management-marketing': 'rh.avif', 'droit-relations-internationales': 'fiscalite_1.avif',
+  'commerce-logistique': 'logistique.webp', 'communication-numerique': 'F89A7166-scaled-1.avif', 'developpement-secteurs-specialises': 'F89A7161-scaled-1.avif',
+};
+const img = featured(formation, '') ?? image(media[fallback[famille?.slug ?? ''] ?? 'etudiants.avif'], '');
+const text = `${formation.meta.diplomes} ${formation.meta.niveau} ${formation.meta.parcours}`;
 const levels = institut.levels.filter(level => text.includes(level));
+const number = formation.meta.reference || String(index + 1).padStart(2, '0');
 ---
-<a class="card" href={`/formations/${formation.slug}/`} data-levels={levels.join(' ')}>
+<a class="card" href={`/formations/${formation.slug}/`} data-family={famille?.slug ?? ''}>
   <div class="card__media">
-    <Picture img={featured(formation, '')} sizes="(min-width: 900px) 25vw, 290px" />
-    <span class="card__num">{String(index + 1).padStart(2, '0')}</span>
+    <Picture img={img} sizes="(min-width: 900px) 25vw, 290px" />
+    <span class="card__num">{number}</span>
   </div>
   <div class="card__body">
-    <p class="card__levels">{levels.length ? levels.join(' · ') : formation.meta.niveau}</p>
+    <p class="card__levels">{levels.length ? levels.join(' · ') : famille?.name}</p>
     <h3 set:html={formation.title.rendered} />
-    {formation.meta.duree && <p class="card__meta">{formation.meta.duree}</p>}
+    {(formation.meta.duree || formation.meta.sigle) && <p class="card__meta">{formation.meta.duree || formation.meta.sigle}</p>}
     <span class="card__more">Découvrir →</span>
   </div>
 </a>

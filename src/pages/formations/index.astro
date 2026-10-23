@@ -2,11 +2,11 @@
 import Base from '../../layouts/Base.astro';
 import PageHero from '../../components/PageHero.astro';
 import FormationCard from '../../components/FormationCard.astro';
-import LevelFilter from '../../components/LevelFilter.astro';
-import { getContent } from '../../lib/wordpress';
+import FamilyFilter from '../../components/FamilyFilter.astro';
+import { familiesOf, getContent } from '../../lib/wordpress';
 import { image } from '../../lib/html';
 const { formations, media } = await getContent();
-const description = 'DUT, Licence et Master : des formations professionnalisantes en gestion, droit, finance et logistique.';
+const description = 'Le catalogue de l’Université VITO S. : gestion, finance, droit, marketing, logistique, communication, numérique et développement.';
 const hero = image(media['formations-hero.avif'], 'Étudiants de l’Institut VITO S. en cours');
 ---
 <Base title="Nos formations" description={description} image={hero?.src}>
@@ -14,7 +14,8 @@ const hero = image(media['formations-hero.avif'], 'Étudiants de l’Institut VI
   <section class="section">
     <div class="wrap">
       {formations.length ? <>
-        <LevelFilter target="#cartes" />
+        <p class="note">Le diplôme (DUT, Licence ou Master) et les conditions d’accès de chaque formation sont confirmés par l’admission au fur et à mesure de leur validation par l’établissement.</p>
+        <FamilyFilter target="#cartes" families={familiesOf(formations)} />
         <div class="cards cards--grid" id="cartes">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
       </> : <p>Le catalogue des formations sera bientôt disponible.</p>}
     </div>

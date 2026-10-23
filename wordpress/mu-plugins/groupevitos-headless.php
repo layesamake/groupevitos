@@ -26,10 +26,10 @@ function groupevitos_schedule_rebuild() {
 
 // Publication, mise à jour, dépublication ou suppression d'un contenu public.
 add_action('transition_post_status', function ($new, $old, $post) {
-    if (wp_is_post_revision($post) || wp_is_post_autosave($post) || !is_post_type_viewable($post->post_type)) return;
+    if (wp_is_post_revision($post) || wp_is_post_autosave($post) || !(is_post_type_viewable($post->post_type) || in_array($post->post_type, ['tarif', 'dossier', 'coordonnee', 'partenaire'], true))) return;
     if ($new === 'publish' || $old === 'publish') groupevitos_schedule_rebuild();
 }, 10, 3);
-foreach (['deleted_post', 'edited_term', 'created_term', 'delete_term', 'wp_update_nav_menu', 'update_option_blogname', 'update_option_blogdescription'] as $hook) {
+foreach (['deleted_post', 'edited_term', 'created_term', 'delete_term', 'wp_update_nav_menu', 'update_option_blogname', 'update_option_blogdescription', 'groupevitos_identite_modifiee'] as $hook) {
     add_action($hook, 'groupevitos_schedule_rebuild');
 }
 

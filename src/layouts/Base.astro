@@ -5,7 +5,7 @@ import '../styles/global.css';
 import Icon from '../components/Icon.astro';
 import { getContent, pageBySlug, pathOf } from '../lib/wordpress';
 import { image, plain } from '../lib/html';
-import { links } from '../lib/extract';
+import { ofType, telHref } from '../lib/referentiel';
 import { institut } from '../lib/institut';
 interface Props {
   title?: string; description?: string; image?: string;
@@ -13,21 +13,27 @@ interface Props {
   cta?: { label: string; href: string };
 }
 const { cta } = Astro.props;
-const { site, pages, formations, media } = await getContent();
+const { site, pages, coordonnees, media, identite } = await getContent();
 const title = Astro.props.title ? `${plain(Astro.props.title)} | ${plain(site.name)}` : `${plain(site.name)} — ${plain(site.description)}`;
 const description = plain(Astro.props.description || site.description || site.name);
 const page = (slug: string) => pageBySlug(pages, slug);
+const entry = (slug: string, label: string, icon: string, path?: string) => page(slug) || path ? { path: path ?? pathOf(page(slug)!), label, icon } : null;
 const nav = [
-  formations.length && { path: '/formations/', label: 'Formations', icon: 'cap' },
-  page('admission') && { path: pathOf(page('admission')!), label: 'Admission', icon: 'file' },
-  page('galeries') && { path: pathOf(page('galeries')!), label: 'Galerie', icon: 'image' },
-  page('a-propos') && { path: pathOf(page('a-propos')!), label: 'L’institut', icon: 'home' },
-  page('contacts') && { path: pathOf(page('contacts')!), label: 'Contact', icon: 'phone' },
+  entry('universite', 'Université', 'cap'),
+  entry('lycee', 'Lycée', 'cap'),
+  entry('itp', 'ITP', 'cap'),
+  entry('admission', 'Admissions', 'file'),
+  entry('galeries', 'Galerie', 'image'),
+  entry('a-propos', 'Le Groupe', 'home'),
+  entry('contacts', 'Contact', 'phone'),
 ].filter(Boolean) as { path: string; label: string; icon: 'cap' | 'file' | 'image' | 'home' | 'phone' }[];
-const tabs = [{ path: '/', label: 'Accueil', icon: 'home' as const }, ...nav.filter(item => item.path !== '/a-propos/')];
+const tabLabels = ['/universite/', '/admission/', '/a-propos/', '/contacts/'];
+const tabs = [{ path: '/', label: 'Accueil', icon: 'home' as const }, ...nav.filter(item => tabLabels.includes(item.path))];
 const signup = page('inscription');
-const contacts = links(page('contacts')?.content.rendered ?? '');
-const phone = contacts.find(link => link.href.startsWith('tel:'));
+const phones = ofType(coordonnees, 'telephone');
+const phone = phones[0] && { href: telHref(phones[0].meta.valeur), text: phones[0].meta.valeur };
+const email = ofType(coordonnees, 'email')[0]?.meta.valeur;
+const socials = ofType(coordonnees, 'reseau');
 const current = (path: string) => (path === '/' ? Astro.url.pathname === '/' : Astro.url.pathname.startsWith(path)) ? 'page' : undefined;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
@@ -76,11 +82,13 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
         <div class="footer__brand">
           <span class="mark" aria-hidden="true"><span></span><span></span><span></span></span>
           <strong set:html={site.name} />
-          {site.description && <p set:html={site.description} />}
+          <p>{identite.devise}</p>
         </div>
-        <ul class="footer__links">{nav.map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
+        <ul class="footer__links">{[...nav, ...(page('partenaires') ? [{ path: pathOf(page('partenaires')!), label: 'Partenaires' }] : [])].map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
         <ul class="footer__links">
-          {contacts.map(link => <li><a href={link.href}>{link.label && `${link.label} : `}{link.text}</a></li>)}
+          {phones.slice(0, 4).map(c => <li><a href={telHref(c.meta.valeur)}>{c.meta.usage} : {c.meta.valeur}</a></li>)}
+          {email && <li><a href={`mailto:${email}`}>{email}</a></li>}
+          {socials.map(c => <li><a href={c.meta.valeur} rel="noopener" target="_blank">{c.meta.usage}</a></li>)}
         </ul>
       </div>
       <p class="wrap footer__legal">{institut.agrement} · © {new Date().getFullYear()} <span set:html={site.name} /></p>
