@@ -3,18 +3,23 @@
  * Plugin Name: Groupe Vitos — WordPress headless
  * Description: Reconstruit le site public (Astro, GitHub Actions) après chaque publication et redirige le front WordPress vers groupevitos.com.
  *
- * À copier dans wp-content/mu-plugins/ puis ajouter dans wp-config.php :
- *   define('GROUPEVITOS_GITHUB_REPO', 'proprietaire/groupevitos');
- *   define('GROUPEVITOS_GITHUB_TOKEN', '...'); // jeton GitHub fine-grained : ce dépôt seulement, Contents: Read and write
+ * À copier dans wp-content/mu-plugins/, puis saisir le jeton GitHub dans Réglages → Site public.
+ * Jeton GitHub fine-grained : dépôt layesamake/groupevitos seulement, permission « Contents : Read and write ».
  */
 
 if (!defined('ABSPATH')) exit;
 
 const GROUPEVITOS_SITE = 'https://groupevitos.com';
+const GROUPEVITOS_REPO = 'layesamake/groupevitos';
 const GROUPEVITOS_DELAY = 60; // secondes : regroupe les enregistrements rapprochés en une seule reconstruction
 
+// Le jeton peut aussi être défini dans wp-config.php (GROUPEVITOS_GITHUB_TOKEN), il est alors prioritaire.
+function groupevitos_token() {
+    return defined('GROUPEVITOS_GITHUB_TOKEN') ? GROUPEVITOS_GITHUB_TOKEN : get_option('groupevitos_github_token', '');
+}
+
 function groupevitos_schedule_rebuild() {
-    if (defined('GROUPEVITOS_GITHUB_TOKEN') && !wp_next_scheduled('groupevitos_rebuild')) {
+    if (groupevitos_token() && !wp_next_scheduled('groupevitos_rebuild')) {
         wp_schedule_single_event(time() + GROUPEVITOS_DELAY, 'groupevitos_rebuild');
     }
 }
@@ -30,10 +35,10 @@ foreach (['deleted_post', 'edited_term', 'created_term', 'delete_term', 'wp_upda
 
 add_action('groupevitos_rebuild', 'groupevitos_trigger_rebuild');
 function groupevitos_trigger_rebuild() {
-    $response = wp_remote_post('https://api.github.com/repos/' . GROUPEVITOS_GITHUB_REPO . '/dispatches', [
+    $response = wp_remote_post('https://api.github.com/repos/' . GROUPEVITOS_REPO . '/dispatches', [
         'timeout' => 15,
         'headers' => [
-            'Authorization' => 'Bearer ' . GROUPEVITOS_GITHUB_TOKEN,
+            'Authorization' => 'Bearer ' . groupevitos_token(),
             'Accept' => 'application/vnd.github+json',
             'User-Agent' => 'groupevitos-wordpress',
         ],
@@ -46,9 +51,31 @@ function groupevitos_trigger_rebuild() {
     return $ok;
 }
 
+// Réglages → Site public : saisie du jeton (jamais réaffiché) et état du dernier déclenchement.
+add_action('admin_menu', function () {
+    add_options_page('Site public', 'Site public', 'manage_options', 'groupevitos', function () {
+        $last = get_option('groupevitos_last_rebuild');
+        echo '<div class="wrap"><h1>Site public</h1><form method="post" action="options.php">';
+        settings_fields('groupevitos');
+        echo '<table class="form-table"><tr><th scope="row"><label for="groupevitos_github_token">Jeton GitHub</label></th><td>';
+        echo '<input type="password" class="regular-text" id="groupevitos_github_token" name="groupevitos_github_token" value="" autocomplete="new-password" placeholder="' . (groupevitos_token() ? 'Jeton enregistré — laisser vide pour le conserver' : 'github_pat_…') . '" />';
+        echo '<p class="description">Jeton fine-grained limité au dépôt ' . esc_html(GROUPEVITOS_REPO) . ', permission « Contents : Read and write ».</p></td></tr>';
+        echo '<tr><th scope="row">Dernière reconstruction</th><td>' . ($last ? esc_html(wp_date('d/m/Y H:i', $last['time'])) . ($last['ok'] ? ' — demandée' : ' — échec (voir le journal PHP)') : 'jamais') . '</td></tr></table>';
+        submit_button();
+        echo '</form></div>';
+    });
+});
+add_action('admin_init', function () {
+    register_setting('groupevitos', 'groupevitos_github_token', [
+        'type' => 'string',
+        'show_in_rest' => false,
+        'sanitize_callback' => fn($value) => trim((string) $value) === '' ? get_option('groupevitos_github_token', '') : sanitize_text_field($value),
+    ]);
+});
+
 // Bouton « Reconstruire le site » dans la barre d'administration.
 add_action('admin_bar_menu', function ($bar) {
-    if (!current_user_can('publish_posts') || !defined('GROUPEVITOS_GITHUB_TOKEN')) return;
+    if (!current_user_can('publish_posts') || !groupevitos_token()) return;
     $last = get_option('groupevitos_last_rebuild');
     $bar->add_node([
         'id' => 'groupevitos-rebuild',

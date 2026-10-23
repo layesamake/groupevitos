@@ -23,6 +23,25 @@ Si WordPress ne répond pas pendant le build, le build échoue et **le site en l
 | Autres pages publiées | `/<slug>/` (pages enfants : `/<parent>/<enfant>/`), menu dans l'ordre « Ordre » des pages de premier niveau |
 | Articles | `/actualites/` et `/actualites/<slug>/`, 3 derniers sur l'accueil |
 
+## WordPress (admin.groupevitos.com)
+
+Les mu-plugins de `wordpress/mu-plugins/` s'installent avec :
+
+```bash
+HOSTINGER_API_TOKEN=... node scripts/installer-mu-plugins.mjs
+```
+
+- `groupevitos-headless.php` : reconstruction du site, réglage du jeton GitHub (Réglages → Site public), redirection du front WordPress
+- `groupevitos-formations.php` : type de contenu « Formations » et ses champs (`niveau`, `duree`, `parcours`, `admission`, `finalite`, `enseignements`, `competences`, `methodes`, `debouches`, `carriere`), exposés dans l'API REST
+
+## Reprise de l'ancien site
+
+L'ancien site (Elementor, sauvegarde Duplicator du 09/12/2025) avait été piraté : seuls ses textes et images ont été repris, jamais ses fichiers PHP.
+
+1. `python scripts/nettoyer-ancien-site.py ../groupevitos-ancien-site` : HTML nettoyé dans `import.json`
+2. `WP_USER=... WP_APP_PASSWORD=... node scripts/importer-ancien-site.mjs ../groupevitos-ancien-site` : simulation
+3. Même commande avec `--appliquer` : envoi des images, création ou mise à jour des pages et formations
+
 ## Développement
 
 ```bash
