@@ -91,7 +91,7 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
           {socials.map(c => <li><a href={c.meta.valeur} rel="noopener" target="_blank">{c.meta.usage}</a></li>)}
         </ul>
       </div>
-      <p class="wrap footer__legal">{institut.agrement} · © {new Date().getFullYear()} <span set:html={site.name} /></p>
+      <p class="wrap footer__legal">{institut.agrement} · © {new Date().getFullYear()} <span set:html={site.name} /> · <a class="footer__admin" href="https://admin.groupevitos.com/" rel="nofollow noopener">Espace de gestion</a></p>
     </footer>
 
     {cta ? (

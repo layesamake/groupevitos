@@ -95,6 +95,11 @@ add_action('admin_post_groupevitos_rebuild', function () {
 // Le front WordPress n'est pas public : les visiteurs sont renvoyés vers le site Astro.
 // L'administration, l'API REST, la connexion, le cron et les aperçus restent accessibles.
 add_action('template_redirect', function () {
+    // La racine de admin.groupevitos.com mène à la connexion du back-office (ou au tableau de bord si déjà connecté).
+    if (!wp_doing_cron() && !(defined('REST_REQUEST') && REST_REQUEST) && trim((string) wp_parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/') === '') {
+        wp_safe_redirect(is_user_logged_in() ? admin_url() : wp_login_url());
+        exit;
+    }
     if (is_preview() || is_user_logged_in() || wp_doing_cron() || (defined('REST_REQUEST') && REST_REQUEST)) return;
     $path = wp_parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     wp_redirect(GROUPEVITOS_SITE . $path, 301);
