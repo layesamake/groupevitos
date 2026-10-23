@@ -1,39 +1,92 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Hero from '../../components/Hero.astro';
-import { getContent, type Formation } from '../../lib/wordpress';
+import PageHero from '../../components/PageHero.astro';
+import FormationCard from '../../components/FormationCard.astro';
+import { getContent, pageBySlug, pathOf, type Formation } from '../../lib/wordpress';
 import { featured, plain, publicLinks } from '../../lib/html';
+import { listItems, tableRows } from '../../lib/extract';
 export async function getStaticPaths() {
   const { formations } = await getContent();
-  return formations.map(formation => ({ params: { slug: formation.slug }, props: { formation } }));
+  return formations.map((formation, index) => ({ params: { slug: formation.slug }, props: { formation, index } }));
 }
-const { formation } = Astro.props as { formation: Formation };
+const { formation, index } = Astro.props as { formation: Formation; index: number };
+const { formations, pages } = await getContent();
 const { meta } = formation;
-const image = featured(formation)?.source_url;
+const img = featured(formation, '');
+const admission = pageBySlug(pages, 'admission');
+const contacts = pageBySlug(pages, 'contacts');
+const applyHref = admission ? pathOf(admission) : contacts ? pathOf(contacts) : '/';
+
+// Parcours : tableau Niveau / Durée / Objectif, sinon niveau et durée simples
+const parcours = tableRows(meta.parcours).map(row => row.map(plain));
+const durations = parcours.length ? parcours.map(([level, duration]) => ({ level, duration })) : [{ level: meta.niveau, duration: meta.duree }].filter(d => d.level || d.duration);
+const competences = tableRows(meta.competences).map(row => ({ title: plain(row[0]), text: plain(row[1] ?? '') }));
+const competenceItems = competences.length ? competences : listItems(meta.competences).filter(item => item.title);
+const methodes = listItems(meta.methodes).map(item => item.title ? `${item.title} ${item.text}` : item.text);
+const debouches = tableRows(meta.debouches).map(row => ({ sector: plain(row[0]), jobs: plain(row[1] ?? '') }));
+const carriere = listItems(meta.carriere).map(item => item.title ? `${item.title} ${item.text}` : item.text);
+
 const sections = [
-  ['parcours', 'Niveaux et objectifs'], ['finalite', 'Finalité de la formation'], ['admission', 'Conditions d’admission'],
-  ['enseignements', 'Enseignements principaux'], ['competences', 'Compétences visées'], ['methodes', 'Méthodes pédagogiques'],
-  ['debouches', 'Débouchés'], ['carriere', 'Poursuite d’études et carrière'],
-] as const;
+  { id: 'objectifs', label: 'Objectifs', show: !!plain(formation.content.rendered) },
+  { id: 'parcours', label: 'Parcours', show: parcours.length > 0 },
+  { id: 'finalite', label: 'Finalité', show: !!plain(meta.finalite) },
+  { id: 'admission', label: 'Admission', show: !!plain(meta.admission) },
+  { id: 'enseignements', label: 'Enseignements', show: !!plain(meta.enseignements) },
+  { id: 'competences', label: 'Compétences', show: !!plain(meta.competences) },
+  { id: 'methodes', label: 'Méthodes', show: !!plain(meta.methodes) },
+  { id: 'debouches', label: 'Débouchés', show: !!plain(meta.debouches) },
+  { id: 'carriere', label: 'Et après', show: !!plain(meta.carriere) },
+].filter(s => s.show);
+const others = formations.filter(other => other.id !== formation.id);
 ---
-<Base title={formation.title.rendered} description={plain(formation.content.rendered).slice(0, 160)} image={image}>
-  <Hero title={formation.title.rendered} kicker="Formation" image={image}>
-    <ul class="hero__facts">
-      {meta.niveau && <li><span>Niveau</span>{meta.niveau}</li>}
-      {meta.duree && <li><span>Durée</span>{meta.duree}</li>}
-    </ul>
-  </Hero>
-  <article class="wrap formation">
-    <div class="prose">
-      <a class="back" href="/formations/">← Toutes les formations</a>
-      {formation.content.rendered && <section><h2>Objectifs</h2><Fragment set:html={publicLinks(formation.content.rendered)} /></section>}
-      {sections.filter(([key]) => meta[key]).map(([key, label]) => <section><h2>{label}</h2><Fragment set:html={publicLinks(meta[key])} /></section>)}
-    </div>
-    <aside class="formation__aside">
+<Base title={formation.title.rendered} description={plain(formation.content.rendered).slice(0, 160)} image={img?.src} cta={{ label: 'Candidater à cette formation', href: applyHref }}>
+  <PageHero title={formation.title.rendered} kicker={`Formation ${String(index + 1).padStart(2, '0')}`} img={img}>
+    {durations.length > 0 && <div class="durations">{durations.map(d => <div><small>{d.level}</small><strong>{d.duration}</strong></div>)}</div>}
+  </PageHero>
+
+  {sections.length > 1 && <nav class="toc" aria-label="Sommaire de la formation"><div class="wrap">{sections.map(s => <a href={`#${s.id}`}>{s.label}</a>)}</div></nav>}
+
+  <div class="wrap formation-layout">
+    <article class="formation">
+      {sections.some(s => s.id === 'objectifs') && <section id="objectifs"><h2>Objectifs</h2><div class="prose" set:html={publicLinks(formation.content.rendered)} /></section>}
+      {parcours.length > 0 && <section id="parcours">
+        <h2>Un parcours en {parcours.length} marche{parcours.length > 1 ? 's' : ''}</h2>
+        <div class="parcours">{parcours.map(([level, duration, goal]) => <div><small>{level} · {duration}</small>{goal}</div>)}</div>
+      </section>}
+      {plain(meta.finalite) && <section id="finalite"><h2>Finalité de la formation</h2><div class="prose" set:html={publicLinks(meta.finalite)} /></section>}
+      {plain(meta.admission) && <section id="admission"><h2>Conditions d’admission</h2><div class="prose" set:html={publicLinks(meta.admission)} /></section>}
+      {plain(meta.enseignements) && <section id="enseignements"><h2>Enseignements principaux</h2><div class="prose" set:html={publicLinks(meta.enseignements)} /></section>}
+      {plain(meta.competences) && <section id="competences">
+        <h2>Compétences visées</h2>
+        {competenceItems.length ? <div class="accordion">{competenceItems.map((item, i) => <details open={i === 0}><summary>{item.title}</summary><p>{item.text}</p></details>)}</div>
+          : <div class="prose" set:html={publicLinks(meta.competences)} />}
+      </section>}
+      {plain(meta.methodes) && <section id="methodes">
+        <h2>Comment on apprend</h2>
+        {methodes.length ? <ul class="tiles">{methodes.map(item => <li>{item}</li>)}</ul> : <div class="prose" set:html={publicLinks(meta.methodes)} />}
+      </section>}
+      {plain(meta.debouches) && <section id="debouches">
+        <h2>Débouchés</h2>
+        {debouches.length ? <div class="outlets">{debouches.map(d => <div><small>{d.sector}</small>{d.jobs}</div>)}</div>
+          : <div class="prose" set:html={publicLinks(meta.debouches)} />}
+      </section>}
+      {plain(meta.carriere) && <section id="carriere">
+        <h2>Et après ?</h2>
+        {carriere.length ? <ul class="chips">{carriere.map(item => <li>{item}</li>)}</ul> : <div class="prose" set:html={publicLinks(meta.carriere)} />}
+      </section>}
+    </article>
+    <aside class="formation-aside">
       <strong>Intéressé par cette formation ?</strong>
       <p>Consultez la procédure d’admission ou contactez notre équipe.</p>
-      <a class="button" href="/admission/">Admission</a>
-      <a class="button button--outline" href="/contacts/">Nous contacter</a>
+      <a class="btn btn--mango" href={applyHref}>Candidater</a>
+      {contacts && <a class="btn btn--outline" href={pathOf(contacts)}>Nous contacter</a>}
     </aside>
-  </article>
+  </div>
+
+  {others.length > 0 && <section class="section section--white">
+    <div class="wrap">
+      <div class="section__head"><h2>Autres formations</h2></div>
+      <div class="cards">{others.map(other => <FormationCard formation={other} index={formations.indexOf(other)} />)}</div>
+    </div>
+  </section>}
 </Base>

@@ -4,17 +4,22 @@
 const API = process.env.WP_API_URL ?? 'https://admin.groupevitos.com/wp-json';
 const required = process.env.WP_REQUIRED === 'true';
 
+export interface Media {
+  source_url: string; alt_text?: string;
+  media_details?: { width?: number; height?: number; sizes?: Record<string, { source_url: string; width: number; height: number }> };
+}
 export interface Entry {
   id: number; slug: string; link: string; date: string; parent?: number; menu_order?: number;
   title: { rendered: string }; content: { rendered: string }; excerpt: { rendered: string };
-  _embedded?: { 'wp:featuredmedia'?: { source_url?: string; alt_text?: string }[] };
+  _embedded?: { 'wp:featuredmedia'?: Media[] };
 }
 export interface Formation extends Entry {
   meta: Record<'niveau' | 'duree' | 'parcours' | 'admission' | 'finalite' | 'enseignements' | 'competences' | 'methodes' | 'debouches' | 'carriere', string>;
 }
 export interface Content {
   available: boolean; site: { name: string; description: string };
-  pages: Entry[]; posts: Entry[]; formations: Formation[]; media: Record<string, string>;
+  pages: Entry[]; posts: Entry[]; formations: Formation[];
+  media: Record<string, Media>; // par nom de fichier
 }
 
 async function get(path: string) {
@@ -37,12 +42,12 @@ async function all<T = Entry>(type: string, query = '_embed=wp:featuredmedia'): 
 async function load(): Promise<Content> {
   try {
     const [root, pages, posts, formations, media] = await Promise.all([
-      get('/'), all('pages'), all('posts'), all<Formation>('formations'), all<{ source_url: string }>('media', '_fields=source_url'),
+      get('/'), all('pages'), all('posts'), all<Formation>('formations'), all<Media>('media', '_fields=source_url,alt_text,media_details'),
     ]);
     return {
       available: true, site: { name: root.data.name, description: root.data.description }, pages, posts,
       formations: formations.sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0)),
-      media: Object.fromEntries(media.map(m => [m.source_url.split('/').pop()!, m.source_url])),
+      media: Object.fromEntries(media.map(m => [m.source_url.split('/').pop()!, m])),
     };
   } catch (error) {
     if (required) throw error;
@@ -56,3 +61,4 @@ export const getContent = () => pending ??= load();
 
 // Chemin public d'une page WordPress (gère les pages enfants : /parent/enfant/).
 export const pathOf = (entry: Entry) => new URL(entry.link).pathname;
+export const pageBySlug = (pages: Entry[], slug: string) => pages.find(page => page.slug === slug);

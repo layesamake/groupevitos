@@ -1,14 +1,22 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Hero from '../../components/Hero.astro';
+import PageHero from '../../components/PageHero.astro';
 import FormationCard from '../../components/FormationCard.astro';
+import LevelFilter from '../../components/LevelFilter.astro';
 import { getContent } from '../../lib/wordpress';
+import { image } from '../../lib/html';
 const { formations, media } = await getContent();
 const description = 'DUT, Licence et Master : des formations professionnalisantes en gestion, droit, finance et logistique.';
+const hero = image(media['formations-hero.avif'], 'Étudiants de l’Institut VITO S. en cours');
 ---
-<Base title="Nos formations" description={description} image={media['formations-hero.avif']}>
-  <Hero title="Nos formations" lead={description} image={media['formations-hero.avif']} />
-  <section class="wrap section">
-    {formations.length ? <div class="grid">{formations.map(formation => <FormationCard formation={formation} />)}</div> : <p>Le catalogue des formations sera bientôt disponible.</p>}
+<Base title="Nos formations" description={description} image={hero?.src}>
+  <PageHero title="Nos formations" lead={description} img={hero} />
+  <section class="section">
+    <div class="wrap">
+      {formations.length ? <>
+        <LevelFilter target="#cartes" />
+        <div class="cards cards--grid" id="cartes">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
+      </> : <p>Le catalogue des formations sera bientôt disponible.</p>}
+    </div>
   </section>
 </Base>

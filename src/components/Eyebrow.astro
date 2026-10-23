@@ -1,0 +1,6 @@
+---
+// Surtitre de section : petit carré du motif « Escalier », numéro et libellé.
+interface Props { number?: string; light?: boolean }
+const { number, light = false } = Astro.props;
+---
+<p class:list={['eyebrow', { 'eyebrow--light': light }]}><span aria-hidden="true"></span>{number && `${number} — `}<slot /></p>

@@ -1,12 +1,15 @@
 ---
 import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
 import PostCard from '../../components/PostCard.astro';
 import { getContent } from '../../lib/wordpress';
 const { posts } = await getContent();
 ---
-<Base title="Actualités" description="Les dernières actualités du groupe.">
-  <section class="wrap section">
-    <h1>Actualités</h1>
-    {posts.length ? <div class="grid">{posts.map(post => <PostCard post={post} />)}</div> : <p>Aucune actualité pour le moment.</p>}
+<Base title="Actualités" description="Les dernières actualités de l’Institut VITO S.">
+  <PageHero title="Actualités" />
+  <section class="section">
+    <div class="wrap">
+      {posts.length ? <div class="cards cards--grid">{posts.map(post => <PostCard post={post} />)}</div> : <p>Aucune actualité pour le moment.</p>}
+    </div>
   </section>
 </Base>

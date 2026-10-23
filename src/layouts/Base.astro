@@ -1,82 +1,100 @@
 ---
+import '@fontsource/bricolage-grotesque/latin-800.css';
+import fontUrl from '@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2?url';
 import '../styles/global.css';
-import { getContent, pathOf } from '../lib/wordpress';
-import { plain } from '../lib/html';
-interface Props { title?: string; description?: string; image?: string }
-const { site, pages, posts, formations, media } = await getContent();
-const title = Astro.props.title ? `${plain(Astro.props.title)} | ${site.name}` : `${plain(site.name)} — ${plain(site.description)}`;
+import Icon from '../components/Icon.astro';
+import { getContent, pageBySlug, pathOf } from '../lib/wordpress';
+import { image, plain } from '../lib/html';
+import { links } from '../lib/extract';
+import { institut } from '../lib/institut';
+interface Props {
+  title?: string; description?: string; image?: string;
+  // Barre du bas sur mobile : navigation (par défaut) ou appel à l'action (fiches formation)
+  cta?: { label: string; href: string };
+}
+const { cta } = Astro.props;
+const { site, pages, formations, media } = await getContent();
+const title = Astro.props.title ? `${plain(Astro.props.title)} | ${plain(site.name)}` : `${plain(site.name)} — ${plain(site.description)}`;
 const description = plain(Astro.props.description || site.description || site.name);
-const visible = pages.filter(page => !page.parent && page.slug !== 'accueil' && page.slug !== 'inscription' && pathOf(page) !== '/')
-  .sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0))
-  .map(page => ({ path: pathOf(page), label: plain(page.title.rendered), order: page.menu_order ?? 0 }));
-// « Formations » s'insère juste après « À propos » (premier élément du menu WordPress)
-const menu = [
-  ...visible.slice(0, 1),
-  ...(formations.length ? [{ path: '/formations/', label: 'Formations', order: 0 }] : []),
-  ...visible.slice(1),
-  ...(posts.length ? [{ path: '/actualites/', label: 'Actualités', order: 99 }] : []),
-];
-const signup = pages.find(page => page.slug === 'inscription');
-const contacts = pages.find(page => page.slug === 'contacts');
-const contactList = contacts?.content.rendered.match(/<ul>[\s\S]*?<\/ul>/)?.[0];
-const logo = media['cropped-logovitos.jpg'];
-const current = (path: string) => Astro.url.pathname.startsWith(path) ? 'page' : undefined;
+const page = (slug: string) => pageBySlug(pages, slug);
+const nav = [
+  formations.length && { path: '/formations/', label: 'Formations', icon: 'cap' },
+  page('admission') && { path: pathOf(page('admission')!), label: 'Admission', icon: 'file' },
+  page('galeries') && { path: pathOf(page('galeries')!), label: 'Galerie', icon: 'image' },
+  page('a-propos') && { path: pathOf(page('a-propos')!), label: 'L’institut', icon: 'home' },
+  page('contacts') && { path: pathOf(page('contacts')!), label: 'Contact', icon: 'phone' },
+].filter(Boolean) as { path: string; label: string; icon: 'cap' | 'file' | 'image' | 'home' | 'phone' }[];
+const tabs = [{ path: '/', label: 'Accueil', icon: 'home' as const }, ...nav.filter(item => item.path !== '/a-propos/')];
+const signup = page('inscription');
+const contacts = links(page('contacts')?.content.rendered ?? '');
+const phone = contacts.find(link => link.href.startsWith('tel:'));
+const current = (path: string) => (path === '/' ? Astro.url.pathname === '/' : Astro.url.pathname.startsWith(path)) ? 'page' : undefined;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const image = Astro.props.image ?? media['herovitos.jpg'];
+const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
 ---
 <!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#0b2b6f" />
+    <meta name="theme-color" content="#1F4FFF" />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://admin.groupevitos.com" crossorigin />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    {image && <meta property="og:image" content={image} />}
-    <title>{title}</title>
+    {ogImage && <meta property="og:image" content={ogImage} />}
   </head>
-  <body>
+  <body class:list={{ 'has-cta': cta }}>
+    <a class="skip" href="#contenu">Aller au contenu</a>
     <header class="header">
       <div class="wrap header__inner">
         <a class="brand" href="/" aria-label={`${plain(site.name)} — accueil`}>
-          {logo ? <img src={logo} alt="Institut VITO S." width="500" height="144" /> : <span set:html={site.name} />}
+          <span class="mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="brand__name">{institut.short}</span>
         </a>
-        {menu.length > 0 && <>
-          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menu"><span></span><span></span><span></span></button>
-          <nav id="menu" class="nav" aria-label="Navigation principale">
-            {menu.map(item => <a href={item.path} aria-current={current(item.path)} set:html={item.label} />)}
-            {signup && <a class="button button--small" href={pathOf(signup)}>S’inscrire</a>}
-          </nav>
-        </>}
+        <nav class="header__nav" aria-label="Navigation principale">
+          {nav.map(item => <a href={item.path} aria-current={current(item.path)}>{item.label}</a>)}
+        </nav>
+        <div class="header__actions">
+          {phone && <a class="header__phone" href={phone.href}>{phone.text}</a>}
+          {signup && <a class="btn btn--mango btn--small" href={pathOf(signup)}>S’inscrire</a>}
+        </div>
       </div>
     </header>
-    <script>
-      const toggle = document.querySelector<HTMLButtonElement>('.nav-toggle');
-      toggle?.addEventListener('click', () => {
-        const open = toggle.getAttribute('aria-expanded') !== 'true';
-        toggle.setAttribute('aria-expanded', String(open));
-        document.querySelector('.header')?.toggleAttribute('data-open', open);
-      });
-    </script>
-    <main><slot /></main>
+
+    <main id="contenu"><slot /></main>
+
     <footer class="footer">
       <div class="wrap footer__grid">
-        <div>
-          <strong class="footer__name" set:html={site.name} />
+        <div class="footer__brand">
+          <span class="mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <strong set:html={site.name} />
           {site.description && <p set:html={site.description} />}
         </div>
-        {contactList && <div class="footer__contacts"><strong>Nous contacter</strong><Fragment set:html={contactList} /></div>}
-        <div>
-          <strong>Liens utiles</strong>
-          <ul>{menu.map(item => <li><a href={item.path} set:html={item.label} /></li>)}</ul>
-        </div>
+        <ul class="footer__links">{nav.map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
+        <ul class="footer__links">
+          {contacts.map(link => <li><a href={link.href}>{link.label && `${link.label} : `}{link.text}</a></li>)}
+        </ul>
       </div>
-      <div class="wrap footer__bottom"><span set:html={`© ${new Date().getFullYear()} ${site.name}`} /></div>
+      <p class="wrap footer__legal">{institut.agrement} · © {new Date().getFullYear()} <span set:html={site.name} /></p>
     </footer>
+
+    {cta ? (
+      <div class="bottom-bar bottom-bar--cta">
+        <a class="btn btn--mango" href={cta.href}>{cta.label}</a>
+        {phone && <a class="bottom-bar__call" href={phone.href} aria-label={`Appeler le ${phone.text}`}><Icon name="phone" size={24} /></a>}
+      </div>
+    ) : (
+      <nav class="bottom-bar" aria-label="Navigation mobile">
+        {tabs.map(item => <a href={item.path} aria-current={current(item.path)}><Icon name={item.icon} />{item.label}</a>)}
+      </nav>
+    )}
   </body>
 </html>

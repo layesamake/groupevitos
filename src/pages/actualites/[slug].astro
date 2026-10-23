@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
 import { getContent, type Entry } from '../../lib/wordpress';
 import { featured, formatDate, plain, publicLinks } from '../../lib/html';
 export async function getStaticPaths() {
@@ -7,14 +8,14 @@ export async function getStaticPaths() {
   return posts.map(post => ({ params: { slug: post.slug }, props: { post } }));
 }
 const { post } = Astro.props as { post: Entry };
-const image = featured(post);
+const img = featured(post);
 ---
-<Base title={post.title.rendered} description={plain(post.excerpt.rendered)}>
-  <article class="wrap prose page">
-    <a class="back" href="/actualites/">← Actualités</a>
-    <h1 set:html={post.title.rendered} />
-    <time datetime={post.date}>{formatDate(post.date)}</time>
-    {image?.source_url && <img class="page__image" src={image.source_url} alt={image.alt_text ?? ''} />}
-    <Fragment set:html={publicLinks(post.content.rendered)} />
-  </article>
+<Base title={post.title.rendered} description={plain(post.excerpt.rendered)} image={img?.src}>
+  <PageHero title={post.title.rendered} kicker={formatDate(post.date)} img={img} />
+  <section class="section">
+    <div class="wrap">
+      <a class="back" href="/actualites/">← Actualités</a>
+      <article class="prose" set:html={publicLinks(post.content.rendered)} />
+    </div>
+  </section>
 </Base>

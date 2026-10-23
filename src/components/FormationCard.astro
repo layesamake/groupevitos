@@ -1,15 +1,21 @@
 ---
+import Picture from './Picture.astro';
 import type { Formation } from '../lib/wordpress';
 import { featured } from '../lib/html';
-const { formation } = Astro.props as { formation: Formation };
-const image = featured(formation);
+import { institut } from '../lib/institut';
+const { formation, index } = Astro.props as { formation: Formation; index: number };
+const text = `${formation.meta.niveau} ${formation.meta.parcours}`;
+const levels = institut.levels.filter(level => text.includes(level));
 ---
-<a class="card" href={`/formations/${formation.slug}/`}>
-  {image?.source_url && <img src={image.source_url} alt="" loading="lazy" decoding="async" />}
+<a class="card" href={`/formations/${formation.slug}/`} data-levels={levels.join(' ')}>
+  <div class="card__media">
+    <Picture img={featured(formation, '')} sizes="(min-width: 900px) 25vw, 290px" />
+    <span class="card__num">{String(index + 1).padStart(2, '0')}</span>
+  </div>
   <div class="card__body">
-    {formation.meta.niveau && <p class="card__tag">{formation.meta.niveau}</p>}
+    <p class="card__levels">{levels.length ? levels.join(' · ') : formation.meta.niveau}</p>
     <h3 set:html={formation.title.rendered} />
-    {formation.meta.duree && <p class="card__meta">Durée : {formation.meta.duree}</p>}
-    <span class="card__more">Voir la formation →</span>
+    {formation.meta.duree && <p class="card__meta">{formation.meta.duree}</p>}
+    <span class="card__more">Découvrir →</span>
   </div>
 </a>

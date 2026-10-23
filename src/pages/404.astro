@@ -1,10 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
 ---
 <Base title="Page introuvable">
-  <section class="wrap section">
-    <h1>Page introuvable</h1>
-    <p>Cette page n’existe pas ou a été déplacée.</p>
-    <p><a href="/">Retour à l’accueil</a></p>
-  </section>
+  <PageHero title="Cette marche n’existe pas." lead="La page demandée a été déplacée ou n’existe plus.">
+    <div class="hero__actions"><a class="btn btn--mango" href="/">Retour à l’accueil</a><a class="btn btn--ghost" href="/formations/">Nos formations</a></div>
+  </PageHero>
 </Base>

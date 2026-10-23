@@ -1,35 +1,93 @@
 ---
 import Base from '../layouts/Base.astro';
-import Hero from '../components/Hero.astro';
-import { getContent, pathOf, type Entry } from '../lib/wordpress';
-import { featured, plain, publicLinks } from '../lib/html';
+import PageHero from '../components/PageHero.astro';
+import Picture from '../components/Picture.astro';
+import Icon from '../components/Icon.astro';
+import Eyebrow from '../components/Eyebrow.astro';
+import { getContent, pageBySlug, pathOf, type Entry } from '../lib/wordpress';
+import { featured, image, plain, publicLinks } from '../lib/html';
+import { figures, links, listItems, section, steps, tableRows } from '../lib/extract';
 export async function getStaticPaths() {
   const { pages } = await getContent();
   return pages.filter(page => page.slug !== 'accueil' && pathOf(page) !== '/').map(page => ({ params: { path: pathOf(page).replace(/^\/|\/$/g, '') }, props: { page } }));
 }
 const { page } = Astro.props as { page: Entry };
-const { media } = await getContent();
+const { media, pages } = await getContent();
+const html = publicLinks(page.content.rendered);
+const byFile = (url: string) => media[url.split('/').pop()!];
 // Photo de bandeau : image mise en avant de la page, sinon une photo de l'établissement
-const image = featured(page)?.source_url ?? media[{ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg' }[page.slug] ?? 'students-bg.avif'];
-const isGallery = page.slug === 'galeries';
-const categories = isGallery ? [...new Set([...page.content.rendered.matchAll(/<figcaption[^>]*>(.*?)<\/figcaption>/g)].map(match => match[1]))] : [];
+const heroFile = ({ admission: 'hero-admission.webp', inscription: 'hero-admission.webp', galeries: 'graduation-1.jpg', 'a-propos': 'F89A7166-scaled-1.avif' } as Record<string, string>)[page.slug];
+const hero = featured(page, '') ?? (heroFile ? image(media[heroFile], '') : undefined);
+
+// Admission : étapes, pièces à fournir et frais mis en forme ; le reste du contenu reste affiché tel quel
+const admissionSteps = page.slug === 'admission' ? steps(html) : [];
+const documents = page.slug === 'admission' ? listItems(section(html, /dossiers|pi[eè]ces/i)).map(item => item.text) : [];
+const fees = page.slug === 'admission' ? tableRows(html).map(row => row.map(plain)).filter(row => row.length >= 4) : [];
+const intro = page.slug === 'admission' ? html.split(/<h2/)[0] + (html.match(/<h2[^>]*>[\s\S]*?<\/h2>\s*(<p>[\s\S]*?<\/p>)/)?.[1] ?? '') : '';
+const structuredAdmission = admissionSteps.length > 0 && fees.length > 0;
+
+// Galerie : catégories tirées des légendes
+const photos = page.slug === 'galeries' ? figures(html) : [];
+const categories = [...new Set(photos.map(photo => photo.caption).filter(Boolean))];
+
+// Contacts et inscription : boutons d'action
+const contactPage = pageBySlug(pages, 'contacts');
+const contactLinks = links(contactPage?.content.rendered ?? '');
+const address = contactPage?.content.rendered.match(/<p[^>]*>[^<]*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+const map = contactPage?.content.rendered.match(/<iframe[^>]*src="([^"]+)"/)?.[1];
+const showContacts = page.slug === 'contacts' || page.slug === 'inscription';
 ---
-<Base title={page.title.rendered} description={plain(page.excerpt.rendered)} image={image}>
-  <Hero title={page.title.rendered} image={image} />
-  <article class:list={['wrap', 'section', isGallery ? 'gallery' : 'prose', `page--${page.slug}`]}>
-    {categories.length > 1 && <div class="filters" role="group" aria-label="Filtrer les photos">
-      <button type="button" aria-pressed="true" data-filter="">Toutes</button>
-      {categories.map(category => <button type="button" aria-pressed="false" data-filter={category} set:html={category} />)}
-    </div>}
-    <Fragment set:html={publicLinks(page.content.rendered)} />
-  </article>
+<Base title={page.title.rendered} description={plain(page.excerpt.rendered)} image={hero?.src}>
+  <PageHero title={page.title.rendered} img={hero} />
+
+  {structuredAdmission ? <>
+    <section class="section">
+      <div class="wrap admission">
+        <div class="prose" set:html={intro} />
+        <ol class="steps-list">{admissionSteps.map(step => <li><span class="steps-list__num">{step.number}</span><div><h3>{step.title}</h3>{step.text && <p>{step.text}</p>}</div></li>)}</ol>
+      </div>
+    </section>
+    {documents.length > 0 && <section class="section section--white">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow>Dossier</Eyebrow><h2>Pièces à fournir</h2></div>
+        <ul class="checklist">{documents.map(doc => <li><Icon name="check" />{doc}</li>)}</ul>
+      </div>
+    </section>}
+    <section class="section">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow>Frais</Eyebrow><h2>Frais de formation annuels</h2></div>
+        <div class="fees">{fees.map(([year, signup, tuition, total]) => <article><h3>{year}</h3><strong>{total}</strong><p>Inscription {signup} · Scolarité {tuition}</p></article>)}</div>
+      </div>
+    </section>
+  </> : page.slug === 'galeries' && photos.length ? (
+    <section class="section">
+      <div class="wrap">
+        {categories.length > 1 && <div class="filters" role="group" aria-label="Filtrer les photos" data-gallery-filter>
+          <button type="button" aria-pressed="true" data-category="">Toutes</button>
+          {categories.map(category => <button type="button" aria-pressed="false" data-category={category}>{category}</button>)}
+        </div>}
+        <div class="gallery">{photos.map((photo, index) => <figure data-category={photo.caption}><Picture img={image(byFile(photo.src), photo.alt || photo.caption)} sizes={index % 5 === 0 ? '(min-width: 900px) 50vw, 100vw' : '(min-width: 900px) 25vw, 50vw'} />{photo.caption && <figcaption>{photo.caption}</figcaption>}</figure>)}</div>
+      </div>
+    </section>
+  ) : (
+    <section class="section">
+      <div class="wrap">
+        {page.slug !== 'contacts' && <article class="prose" set:html={html} />}
+        {showContacts && contactLinks.length > 0 && <div class="contact__list" style="margin-top: 1.5rem">
+          {contactLinks.map((link, i) => <a class="contact__item" href={link.href}><Icon name={link.href.startsWith('mailto:') ? 'mail' : 'phone'} /><span><strong>{link.href.startsWith('mailto:') ? 'Écrire un e-mail' : `Appeler ${link.label}`}</strong><span>{link.text}</span></span></a>)}
+          {address && <a class="contact__item" href={address[1]}><Icon name="pin" /><span><strong>Itinéraire</strong><span>{plain(address[2])}</span></span></a>}
+        </div>}
+        {page.slug === 'contacts' && map && <iframe class="map" src={map} title="Plan d’accès à l’Institut VITO S." loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>}
+      </div>
+    </section>
+  )}
+
   {categories.length > 1 && <script>
-    const buttons = document.querySelectorAll<HTMLButtonElement>('.filters button');
+    const group = document.querySelector<HTMLElement>('[data-gallery-filter]');
+    const buttons = group?.querySelectorAll<HTMLButtonElement>('button') ?? [];
     buttons.forEach(button => button.addEventListener('click', () => {
       buttons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
-      document.querySelectorAll<HTMLElement>('.gallery figure').forEach(figure => {
-        figure.hidden = !!button.dataset.filter && figure.querySelector('figcaption')?.innerHTML !== button.dataset.filter;
-      });
+      document.querySelectorAll<HTMLElement>('.gallery figure').forEach(figure => { figure.hidden = !!button.dataset.category && figure.dataset.category !== button.dataset.category; });
     }));
   </script>}
 </Base>

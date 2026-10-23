@@ -1,0 +1,18 @@
+---
+// Filtre DUT / Licence / Master : masque les cartes dont data-levels ne contient pas le niveau choisi.
+import { institut } from '../lib/institut';
+---
+<div class="filters" role="group" aria-label="Filtrer par niveau" data-filter-target={Astro.props.target}>
+  <button type="button" aria-pressed="true" data-level="">Tous</button>
+  {institut.levels.map(level => <button type="button" aria-pressed="false" data-level={level}>{level}</button>)}
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-filter-target]').forEach(group => {
+    const buttons = group.querySelectorAll<HTMLButtonElement>('button');
+    const cards = document.querySelectorAll<HTMLElement>(`${group.dataset.filterTarget} [data-levels]`);
+    buttons.forEach(button => button.addEventListener('click', () => {
+      buttons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+      cards.forEach(card => { card.hidden = !!button.dataset.level && !card.dataset.levels!.split(' ').includes(button.dataset.level!); });
+    }));
+  });
+</script>

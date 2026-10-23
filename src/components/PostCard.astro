@@ -1,14 +1,14 @@
 ---
+import Picture from './Picture.astro';
 import type { Entry } from '../lib/wordpress';
 import { featured, formatDate } from '../lib/html';
 const { post } = Astro.props as { post: Entry };
-const image = featured(post);
 ---
 <a class="card" href={`/actualites/${post.slug}/`}>
-  {image?.source_url && <img src={image.source_url} alt={image.alt_text ?? ''} loading="lazy" decoding="async" />}
+  <div class="card__media"><Picture img={featured(post)} sizes="(min-width: 900px) 33vw, 290px" /></div>
   <div class="card__body">
-    <time datetime={post.date}>{formatDate(post.date)}</time>
+    <p class="card__meta"><time datetime={post.date}>{formatDate(post.date)}</time></p>
     <h3 set:html={post.title.rendered} />
-    <div class="card__excerpt" set:html={post.excerpt.rendered} />
+    <span class="card__more">Lire →</span>
   </div>
 </a>
