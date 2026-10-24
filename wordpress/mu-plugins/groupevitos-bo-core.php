@@ -334,6 +334,16 @@ add_action('admin_bar_menu', function ($bar) {
     if (!current_user_can('manage_options')) $bar->remove_node('updates');
     if ($bar->get_node('site-name')) $bar->add_node(['id' => 'site-name', 'title' => 'Groupe VITO S.', 'href' => 'https://groupevitos.com', 'meta' => ['target' => '_blank']]);
 }, 999);
+// Favicon du Groupe dans l'administration et sur la page de connexion (fichiers hébergés sur le site public)
+function gvb_favicon() {
+    echo '<link rel="icon" href="https://groupevitos.com/favicon.svg" type="image/svg+xml">' . "
+" . '<link rel="icon" href="https://groupevitos.com/favicon.ico" sizes="48x48">' . "
+" . '<link rel="apple-touch-icon" href="https://groupevitos.com/apple-touch-icon.png">' . "
+";
+}
+add_action('admin_head', 'gvb_favicon', 1);
+add_action('login_head', 'gvb_favicon', 1);
+add_filter('get_site_icon_url', fn($url) => $url ?: 'https://groupevitos.com/icon-192.png');
 add_filter('admin_footer_text', fn() => 'Groupe VITO S. — espace de gestion');
 add_filter('update_footer', '__return_empty_string', 99);
 add_filter('admin_title', fn($a, $t) => ($t ?: 'Espace de gestion') . ' — Groupe VITO S.', 10, 2);
