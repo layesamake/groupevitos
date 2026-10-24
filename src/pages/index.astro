@@ -82,7 +82,7 @@ const reperes = [
         <div class="section__head"><Eyebrow number="02">Université</Eyebrow><h2>Trouvez votre voie</h2></div>
         <FamilyFilter target="#cartes-accueil" families={familiesOf(formations)} />
       </div>
-      <div class="cards" id="cartes-accueil">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
+      <div class="cards cards--row" id="cartes-accueil" tabindex="0" aria-label="Liste des formations, faites défiler horizontalement">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
       <a class="btn btn--outline btn--wide more-link" href="/formations/">Voir les {formations.length} formations <span aria-hidden="true">→</span></a>
     </div>
   </section>}

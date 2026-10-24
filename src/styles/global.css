@@ -392,3 +392,9 @@ button { font: inherit; }
 .plaquette-form .plaquette-form__canal input[type="radio"] { width: 20px; height: 20px; min-height: 0; padding: 0; accent-color: var(--cobalt); }
 
 .plaquette-form__note { margin: 0; font-size: .85rem; color: var(--muted); max-width: 46rem; }
+
+/* Liste des formations de l'accueil : une seule ligne, défilement horizontal (même sur ordinateur) */
+.cards.cards--row { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: var(--gutter); margin-inline: calc(-1 * var(--gutter)); padding: 4px var(--gutter) 16px; scrollbar-width: thin; scrollbar-color: var(--cobalt) transparent; }
+.cards.cards--row > * { flex: 0 0 min(80vw, 290px); scroll-snap-align: start; }
+.cards.cards--row::-webkit-scrollbar { height: 8px; }
+.cards.cards--row::-webkit-scrollbar-thumb { background: var(--cobalt); border-radius: 8px; }
