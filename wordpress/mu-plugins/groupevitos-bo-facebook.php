@@ -52,6 +52,22 @@ function gvb_fb_appel($methode, $chemin, array $params = []) {
     return $corps;
 }
 
+// Si le jeton collé est celui d'un compte (et non d'une page), on retrouve automatiquement le jeton de la page.
+function gvb_fb_resoudre_jeton_page() {
+    $c = gvb_fb_reglages(); $page = preg_replace('/\D/', '', $c['page_id']);
+    if ($c['jeton'] === '' || $page === '') return null;
+    $r = gvb_fb_appel('GET', 'me/accounts', ['fields' => 'id,name,access_token', 'limit' => '100']);
+    if (is_wp_error($r) || empty($r['data'])) return null; // déjà un jeton de page, ou aucune page accessible
+    foreach ($r['data'] as $pg) {
+        if ((string) ($pg['id'] ?? '') === $page && !empty($pg['access_token'])) {
+            $c['jeton'] = $pg['access_token'];
+            update_option('gvb_facebook', $c, false);
+            return $pg['name'] ?? true;
+        }
+    }
+    return false; // la page n'est pas dans la liste des pages autorisées
+}
+
 // ── Images : stockées dans un dossier public (Facebook doit pouvoir les télécharger) ──
 function gvb_fb_enregistrer_images() {
     $urls = [];
@@ -194,10 +210,13 @@ add_action('admin_post_gvb_fb_sauver', function () {
     if ($page === '') gvb_retour('gv-reglages', [], null, 'Identifiant de page invalide.');
     update_option('gvb_facebook', ['page_id' => $page, 'jeton' => $jeton !== '' ? $jeton : $a['jeton'], 'actif' => empty($_POST['actif']) ? 0 : 1], false);
     gvb_log(0, 'Réglages Facebook modifiés');
-    gvb_retour('gv-reglages', [], 'Réglages Facebook enregistrés.');
+    $res = $jeton !== '' ? gvb_fb_resoudre_jeton_page() : null;
+    if ($res === false) gvb_retour('gv-reglages', [], null, 'Réglages enregistrés, mais la page ' . $page . ' ne fait pas partie des pages autorisées par ce jeton : refaites la génération du jeton en cochant la page.');
+    gvb_retour('gv-reglages', [], $res ? 'Réglages enregistrés : jeton de la page « ' . (is_string($res) ? $res : $page) . ' » récupéré automatiquement.' : 'Réglages Facebook enregistrés.');
 });
 add_action('admin_post_gvb_fb_tester', function () {
     gvb_garde('parametres', 'modifier', 'gvb_fb_tester');
+    gvb_fb_resoudre_jeton_page();
     $r = gvb_fb_appel('GET', preg_replace('/\D/', '', gvb_fb_reglages()['page_id']), ['fields' => 'name']);
     if (is_wp_error($r)) gvb_retour('gv-reglages', [], null, 'Connexion refusée : ' . $r->get_error_message());
     gvb_retour('gv-reglages', [], 'Connexion réussie : page « ' . ($r['name'] ?? '?') . ' ».');

@@ -21,6 +21,7 @@ add_filter('gvb_fb_http', function ($pre, $methode, $chemin, $params) use (&$app
     $appels[] = [$methode, $chemin, $params];
     if (($params['access_token'] ?? '') === 'JETON-MAUVAIS') return ['response' => ['code' => 400], 'body' => json_encode(['error' => ['message' => 'Invalid OAuth access token JETON-MAUVAIS']])];
     if ($methode === 'DELETE') return ['response' => ['code' => 200], 'body' => '{"success":true}'];
+    if ($methode === 'GET' && $chemin === 'me/accounts') return ($params['access_token'] ?? '') === 'JETON-UTILISATEUR' ? ['response' => ['code' => 200], 'body' => json_encode(['data' => [['id' => '1376716678856765', 'name' => 'Groupe vitos', 'access_token' => 'JETON-PAGE']]])] : ['response' => ['code' => 400], 'body' => json_encode(['error' => ['message' => '(#100) Tried accessing nonexisting field (accounts) on node type (Page)']])];
     if ($methode === 'GET') return ['response' => ['code' => 200], 'body' => '{"name":"Groupe VITOS","id":"1"}'];
     if (str_ends_with($chemin, '/photos') && ($params['published'] ?? '') === 'false' && !isset($params['scheduled_publish_time'])) return ['response' => ['code' => 200], 'body' => json_encode(['id' => 'photo' . count($appels)])];
     return ['response' => ['code' => 200], 'body' => json_encode(['id' => '6159_' . count($appels), 'post_id' => '6159_p' . count($appels)])];
@@ -41,6 +42,14 @@ $envoyer('gvb_fb_sauver', 'gvb_fb_sauver', ['actif' => '1', 'page_id' => '137671
 $t('jeton conservé si le champ est vide', gvb_fb_reglages()['jeton'] === 'JETON-SECRET');
 ob_start(); $_GET = []; gvb_page_reglages(); $h = ob_get_clean(); $t('le jeton n’est jamais réaffiché', !str_contains($h, 'JETON-SECRET') && str_contains($h, 'Page Facebook'));
 $r = $envoyer('gvb_fb_tester', 'gvb_fb_tester', []); $t('test de connexion', str_contains(urldecode($r), 'Connexion réussie') && str_contains(urldecode($r), 'Groupe VITOS'), $r);
+
+$envoyer('gvb_fb_sauver', 'gvb_fb_sauver', ['actif' => '1', 'page_id' => '1376716678856765', 'jeton' => 'JETON-UTILISATEUR']);
+$t('jeton de compte : le jeton de la page est retrouvé automatiquement', gvb_fb_reglages()['jeton'] === 'JETON-PAGE');
+$envoyer('gvb_fb_sauver', 'gvb_fb_sauver', ['actif' => '1', 'page_id' => '1376716678856765', 'jeton' => 'JETON-SECRET']);
+$t('jeton déjà de page : conservé tel quel', gvb_fb_reglages()['jeton'] === 'JETON-SECRET');
+$r = $envoyer('gvb_fb_sauver', 'gvb_fb_sauver', ['actif' => '1', 'page_id' => '999', 'jeton' => 'JETON-UTILISATEUR']);
+$t('page absente des pages autorisées : message clair', str_contains(urldecode($r), 'ne fait pas partie') && gvb_fb_reglages()['jeton'] === 'JETON-UTILISATEUR', $r);
+$envoyer('gvb_fb_sauver', 'gvb_fb_sauver', ['actif' => '1', 'page_id' => '1376716678856765', 'jeton' => 'JETON-SECRET']);
 
 $lignes[] = "\n## Publication";
 $r = $envoyer('gvb_fb_publier', 'gvb_fb_publier', ['texte' => 'Inscriptions ouvertes !', 'lien' => 'https://groupevitos.com/admission/']);
