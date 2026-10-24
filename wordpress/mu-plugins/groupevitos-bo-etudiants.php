@@ -72,7 +72,9 @@ function gvb_reinscrire($etudiant_id, $annee, $niveau, $frais_inscription, $frai
         $now = gvb_now();
         $wpdb->insert(gvb_table('inscriptions'), ['demande_id' => $e->demande_id, 'etudiant_id' => $e->id, 'matricule' => $e->matricule, 'pole' => $e->pole, 'annee' => $annee, 'niveau' => $niveau, 'formation_id' => $e->formation_id,
             'frais' => wp_json_encode(['inscription' => (int) $frais_inscription, 'scolarite' => (int) $frais_scolarite]), 'derogation' => '', 'statut' => 'validee', 'inscrit_le' => $now, 'inscrit_par' => get_current_user_id()]);
+        $ins_id = (int) $wpdb->insert_id;
         $wpdb->update(gvb_table('etudiants'), ['annee' => $annee, 'niveau' => $niveau, 'modifie_le' => $now], ['id' => $e->id]);
+        do_action('gvb_reinscription_creee', $ins_id);
         gvb_log($e->demande_id, 'Réinscription', $e->matricule . ' — ' . $annee . ' — ' . $niveau);
         return true;
     } finally {
@@ -131,7 +133,7 @@ function gvb_page_etudiant() {
     $ins = $wpdb->get_results($wpdb->prepare('SELECT * FROM ' . gvb_table('inscriptions') . ' WHERE etudiant_id = %d ORDER BY id DESC', $e->id));
     $l = [];
     foreach ($ins as $i) { $fr = json_decode((string) $i->frais, true) ?: []; $l[] = '<tr><td>' . esc_html($i->annee) . '</td><td>' . esc_html($i->niveau ?: '—') . '</td><td class="d">' . esc_html(gvb_fcfa(($fr['inscription'] ?? 0) + ($fr['scolarite'] ?? 0))) . '</td><td>' . gvb_badge($i->statut === 'validee' ? 'validee' : 'annulee', $i->statut === 'validee' ? 'Validée' : 'Annulée') . '</td></tr>'; }
-    echo '<div class="gvb-boite"><h2>' . gvb_icone('journal', 18) . 'Parcours</h2>' . gvb_tableau(['Année', 'Niveau', 'Frais prévus', 'État'], $l, 'Aucune inscription.') . '<p><a href="' . esc_url(gvb_url('gv-demande', ['id' => $e->demande_id])) . '">Voir le dossier d’admission →</a></p></div>';
+    echo '<div class="gvb-boite"><h2>' . gvb_icone('journal', 18) . 'Parcours</h2>' . gvb_tableau(['Année', 'Niveau', 'Frais prévus', 'État'], $l, 'Aucune inscription.') . '<p><a href="' . esc_url(gvb_url('gv-demande', ['id' => $e->demande_id])) . '">Voir le dossier d’admission →</a>' . (gvb_can('finances', 'voir') ? ' &nbsp;·&nbsp; <a href="' . esc_url(gvb_url('gv-compte', ['id' => $e->id])) . '">Compte financier →</a>' : '') . '</p></div>';
 
     if ($e->statut === 'actif' && gvb_can('inscriptions', 'creer')) {
         $a = gvb_reglages()['annee'];

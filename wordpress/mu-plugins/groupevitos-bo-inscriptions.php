@@ -157,6 +157,13 @@ function gvb_page_tableau() {
         . (gvb_can('etudiants', 'voir') ? gvb_carte('Étudiants actifs', gvb_nb_etudiants_actifs(), 'Tous niveaux', 'carte', '', gvb_url('gv-etudiants', ['statut' => 'actif'])) : '')
         . gvb_carte('Doublons probables', $k['doublons'], 'À vérifier', 'utilisateurs', $k['doublons'] ? 'attention' : '') . '</div>';
     if (gvb_can('contacts', 'voir')) { global $wpdb; echo '<div class="gvb-cartes">' . gvb_carte('Contacts plaquette (7 jours)', (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM ' . gvb_table('contacts') . ' WHERE cree_le > %s', gmdate('Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS))), 'Visiteurs ayant demandé la plaquette', 'utilisateurs', '', gvb_url('gv-contacts')) . '</div>'; }
+    if (gvb_can('finances', 'voir') && function_exists('gvb_etudiants_avec_charges')) {
+        global $wpdb; $ret = 0; $nb = 0;
+        foreach (gvb_etudiants_avec_charges() as $e) { $cp = gvb_compte($e->id); if ($cp['retard'] > 0 && !in_array($e->statut, ['inactif', 'abandon'], true)) { $ret += $cp['retard']; $nb++; } }
+        $w = ['p.annule = 0', 'p.date_paiement >= %s']; $ar = [gmdate('Y-m-01')]; gvb_clause_pole($w, $ar, 'e');
+        $mois = (int) $wpdb->get_var($wpdb->prepare('SELECT COALESCE(SUM(p.montant),0) FROM ' . gvb_table('paiements') . ' p JOIN ' . gvb_table('etudiants') . ' e ON e.id = p.etudiant_id WHERE ' . implode(' AND ', $w), $ar));
+        echo '<div class="gvb-cartes">' . gvb_carte('Encaissé ce mois', gvb_montant($mois), 'Paiements enregistrés', 'argent', 'ok', gvb_url('gv-finances')) . gvb_carte('Impayés', gvb_montant($ret), $nb . ' étudiant(s) en retard', 'alerte', $ret ? 'attention' : '', gvb_url('gv-impayes')) . '</div>';
+    }
     $lignes = [];
     foreach (GVB_POLES as $slug => $nom) { if ($pole !== '' && $pole !== $slug) continue; $p = $k['poles'][$slug] ?? []; $lignes[] = '<tr><td><strong>' . esc_html($nom) . '</strong></td><td>' . array_sum($p) . '</td><td>' . ($p['acceptee'] ?? 0) . '</td><td>' . ($p['inscrite'] ?? 0) . '</td><td>' . ($p['refusee'] ?? 0) . '</td></tr>'; }
     echo '<div class="gvb-boite"><h2>' . gvb_icone('pole', 18) . 'Répartition par pôle</h2>' . gvb_tableau(['Pôle', 'Demandes', 'Acceptées', 'Inscrites', 'Refusées'], $lignes) . '</div>';
