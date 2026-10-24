@@ -82,10 +82,69 @@ const reperes = [
         <div class="section__head"><Eyebrow number="02">Université</Eyebrow><h2>Trouvez votre voie</h2></div>
         <FamilyFilter target="#cartes-accueil" families={familiesOf(formations)} />
       </div>
-      <div class="cards cards--row" id="cartes-accueil" tabindex="0" aria-label="Liste des formations, faites défiler horizontalement">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
+      <div class="carousel" data-carousel>
+        <div class="carousel__bar">
+          <p class="carousel__count" aria-live="polite"></p>
+          <div class="carousel__nav">
+            <button type="button" class="carousel__btn" data-dir="-1" aria-label="Formations précédentes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="carousel__btn" data-dir="1" aria-label="Formations suivantes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+          </div>
+        </div>
+        <div class="carousel__viewport">
+        <div class="cards cards--row" id="cartes-accueil" tabindex="0" role="region" aria-label="Liste des formations : utilisez les flèches ou les touches gauche et droite">{formations.map((formation, index) => <FormationCard formation={formation} index={index} />)}</div>
+        </div>
+      </div>
       <a class="btn btn--outline btn--wide more-link" href="/formations/">Voir les {formations.length} formations <span aria-hidden="true">→</span></a>
     </div>
   </section>}
+
+
+  <script>
+    document.querySelectorAll<HTMLElement>('[data-carousel]').forEach(root => {
+      const list = root.querySelector<HTMLElement>('.cards')!;
+      const viewport = root.querySelector<HTMLElement>('.carousel__viewport')!;
+      const count = root.querySelector<HTMLElement>('.carousel__count')!;
+      const [prev, next] = Array.from(root.querySelectorAll<HTMLButtonElement>('.carousel__btn'));
+      const cards = () => Array.from(list.children).filter(card => !(card as HTMLElement).hidden) as HTMLElement[];
+      const update = () => {
+        const all = cards(), box = list.getBoundingClientRect();
+        const seen = all.map((card, index) => ({ index, rect: card.getBoundingClientRect() })).filter(({ rect }) => Math.min(rect.right, box.right) - Math.max(rect.left, box.left) >= rect.width * 0.5);
+        const first = seen.length ? seen[0].index + 1 : 1, last = seen.length ? seen[seen.length - 1].index + 1 : Math.min(all.length, 1);
+        count.textContent = all.length ? `${first}–${last} sur ${all.length} formations` : '';
+        const atStart = list.scrollLeft <= 2, atEnd = list.scrollLeft + list.clientWidth >= list.scrollWidth - 2;
+        prev.disabled = atStart; next.disabled = atEnd;
+        viewport.dataset.end = String(atEnd);
+        root.hidden = false;
+      };
+      let target: number | null = null, timer: ReturnType<typeof setTimeout>;
+      const move = (dir: number) => {
+        const shown = cards(), pas = shown.length > 1 ? shown[1].offsetLeft - shown[0].offsetLeft : 300;
+        const step = pas * Math.max(1, Math.floor(list.clientWidth / pas));
+        target = Math.max(0, Math.min((target ?? list.scrollLeft) + dir * step, list.scrollWidth - list.clientWidth));
+        list.scrollTo({ left: target, behavior: 'smooth' });
+        clearTimeout(timer); timer = setTimeout(() => { target = null; }, 700);
+      };
+      prev.addEventListener('click', () => move(-1));
+      next.addEventListener('click', () => move(1));
+      list.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+      list.addEventListener('keydown', event => { if (event.key === 'ArrowRight') { event.preventDefault(); move(1); } if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); } });
+      window.addEventListener('resize', update);
+      document.querySelectorAll('[data-family-filter] button').forEach(button => button.addEventListener('click', () => { list.scrollTo({ left: 0 }); setTimeout(update, 0); }));
+      // Glisser à la souris
+      let startX = 0, startLeft = 0, dragging = false, moved = false;
+      list.addEventListener('pointerdown', event => { if (event.pointerType !== 'mouse' || event.button !== 0) return; dragging = true; moved = false; startX = event.clientX; startLeft = list.scrollLeft; });
+      window.addEventListener('pointermove', event => {
+        if (!dragging) return;
+        const delta = event.clientX - startX;
+        if (Math.abs(delta) > 5) { moved = true; list.classList.add('is-dragging'); }
+        if (moved) list.scrollLeft = startLeft - delta;
+      });
+      window.addEventListener('pointerup', () => { dragging = false; list.classList.remove('is-dragging'); });
+      list.addEventListener('click', event => { if (moved) { event.preventDefault(); event.stopPropagation(); moved = false; } }, true);
+      list.addEventListener('dragstart', event => event.preventDefault());
+      update();
+    });
+  </script>
 
   {why.length > 0 && <section class="section">
     <div class="wrap why">
