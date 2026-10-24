@@ -1,0 +1,106 @@
+<?php
+// Recette : recherche globale, « + Nouveau », écrans épinglés et récents (WordPress Playground).
+define('GVB_ESSAI', true);
+$lignes = []; $ok = 0; $ko = 0;
+$t = function ($nom, $cond, $detail = '') use (&$lignes, &$ok, &$ko) { $cond ? $ok++ : $ko++; $lignes[] = ($cond ? '  ok  ' : ' ECHEC ') . $nom . (!$cond && $detail !== '' ? ' — ' . substr($detail, 0, 500) : ''); };
+register_shutdown_function(function () { $e = error_get_last(); if ($e && in_array($e['type'], [E_ERROR, E_PARSE], true)) file_put_contents('/wordpress/wp-content/out/fatal.txt', print_r($e, true)); });
+require '/wordpress/wp-load.php';
+require_once ABSPATH . WPINC . '/class-wp-admin-bar.php';
+do_action('init');
+global $wpdb;
+$an = gvb_reglages()['annee']; $now = gvb_now();
+add_filter('wp_die_handler', fn() => function ($m) { throw new Exception('DIE:' . (is_wp_error($m) ? $m->get_error_message() : (string) $m)); });
+add_filter('wp_redirect', function ($loc) { throw new Exception('REDIR:' . $loc); });
+gvb_synchroniser_roles();
+$envoyer = function ($action, $nonce, array $post) { $_POST = $post + ['_wpnonce' => wp_create_nonce($nonce)]; $_REQUEST = $_POST; $_SERVER['REQUEST_METHOD'] = 'POST'; try { do_action('admin_post_' . $action); return 'rien'; } catch (Throwable $e) { return urldecode($e->getMessage()); } };
+$mk = function ($l, $r, $pole = '') { $id = wp_insert_user(['user_login' => $l, 'user_pass' => wp_generate_password(), 'role' => $r, 'user_email' => "$l@exemple.test"]); if ($pole) update_user_meta($id, 'gv_pole', $pole); return $id; };
+$dir = $mk('d', 'gv_direction'); $sco = $mk('s', 'gv_scolarite'); $cpt = $mk('c', 'gv_comptabilite'); $rpL = $mk('rl', 'gv_responsable_pole', 'lycee'); $com = $mk('com', 'gv_communication');
+wp_set_current_user($dir);
+$demande = function ($nom, $prenom, $niveau, $pole, $tel, $parent_tel = '') use ($wpdb, $an) { $id = gvb_creer_demande(['pole' => $pole, 'annee' => $an, 'niveau' => $niveau, 'formation_id' => 0, 'serie' => '', 'nom' => $nom, 'prenom' => $prenom, 'naissance' => '2006-03-14', 'sexe' => 'F', 'nationalite' => '', 'telephone' => $tel, 'email' => '', 'adresse' => '', 'parent_nom' => 'Parent ' . $nom, 'parent_telephone' => $parent_tel, 'parent_email' => '', 'provenance' => '', 'message' => ''], 'agence'); $wpdb->update(gvb_table('pieces'), ['recue' => 1], ['demande_id' => $id]); $wpdb->update(gvb_table('demandes'), ['statut' => 'acceptee'], ['id' => $id]); return $id; };
+$dA = $demande('Diarra', 'Awa', 'Licence 1', 'universite', '+223 70 11 22 33', '+223 66 00 00 07'); $dF = $demande('Sy', 'Fanta', '10e année', 'lycee', '+223 65 44 33 22'); $dX = $demande('Pending', 'Nana', 'Licence 1', 'universite', '+223 70 99 88 77');
+gvb_inscrire($dA, 50000, 400000, ''); gvb_inscrire($dF, 10000, 150000, '');
+$eA = (int) $wpdb->get_var('SELECT id FROM ' . gvb_table('etudiants') . " WHERE demande_id = $dA"); $eF = (int) $wpdb->get_var('SELECT id FROM ' . gvb_table('etudiants') . " WHERE demande_id = $dF");
+gvb_enregistrer_paiement($eA, 60000, 'virement', gvb_aujourdhui(), 'VIR-7788', '');
+$wpdb->insert(gvb_table('enseignants'), ['nom' => 'Kouyaté', 'prenom' => 'Ibrahim', 'email' => 'ibrahim@exemple.test', 'telephone' => '+223 76 12 34 56', 'specialites' => 'Gestion de projet', 'statut' => 'permanent', 'cree_le' => $now, 'modifie_le' => $now]);
+$wpdb->insert(gvb_table('cours'), ['pole' => 'universite', 'formation_id' => 0, 'niveau' => 'Licence 1', 'intitule' => 'Comptabilité générale', 'code' => 'CG101', 'volume' => 40, 'cree_le' => $now]);
+gvb_creer_compte('parent', 'maman.awa@exemple.test', 'Mme Diarra', [$eA]);
+$wpdb->insert(gvb_table('contacts'), ['canal' => 'email', 'nom' => 'Visiteur Curieux', 'email' => 'curieux@exemple.test', 'consentement_le' => $now, 'cree_le' => $now]);
+$urls = fn($r) => array_merge(...array_map(fn($g) => array_map(fn($i) => $i[2], $g['items']), array_values($r)) ?: [[]]);
+$libs = fn($r) => array_merge(...array_map(fn($g) => array_map(fn($i) => $i[0], $g['items']), array_values($r)) ?: [[]]);
+
+$lignes[] = '## Recherche (Direction)';
+$r = gvb_rechercher('UNI-2026-0001'); $t('matricule exact : l’étudiant', isset($r['etudiants']) && count($r['etudiants']['items']) === 1 && str_contains($r['etudiants']['items'][0][0], 'DIARRA'), json_encode(array_keys($r)));
+$r = gvb_rechercher('diarra'); $t('nom (insensible à la casse) : étudiant, demande, compte', isset($r['etudiants']) && isset($r['demandes']) && !isset($r['enseignants']), json_encode(array_keys($r)));
+$r = gvb_rechercher('ADM-' . gmdate('Y')); $t('code de demande partiel', isset($r['demandes']) && count($r['demandes']['items']) >= 3, json_encode(array_keys($r)));
+foreach (['70112233', '+22370112233', '70 11 22 33', '70-11-22-33'] as $q) { $r = gvb_rechercher($q); $t("téléphone « $q » (tous formats)", isset($r['etudiants']) && str_contains($r['etudiants']['items'][0][0], 'DIARRA'), json_encode(array_keys($r))); }
+$r = gvb_rechercher('66 00 00 07'); $t('téléphone du parent', isset($r['etudiants']), json_encode(array_keys($r)));
+$r = gvb_rechercher('kouyaté'); $t('enseignant par nom', isset($r['enseignants']) && str_contains($r['enseignants']['items'][0][0], 'KOUYATÉ'), json_encode(array_keys($r)));
+$r = gvb_rechercher('Gestion de projet'); $t('enseignant par spécialité', isset($r['enseignants']), json_encode(array_keys($r)));
+$r = gvb_rechercher('CG101'); $t('cours par code', isset($r['cours']) && $r['cours']['items'][0][0] === 'Comptabilité générale');
+$r = gvb_rechercher('REC-' . gmdate('Y') . '-00001'); $t('n° de reçu', isset($r['paiements']) && str_contains($r['paiements']['items'][0][0], 'REC-'), json_encode(array_keys($r)));
+$r = gvb_rechercher('VIR-7788'); $t('référence de virement', isset($r['paiements']), json_encode(array_keys($r)));
+$r = gvb_rechercher('maman.awa'); $t('compte d’espace en ligne par e-mail', isset($r['comptes']) && str_contains($r['comptes']['items'][0][1], 'Parent'));
+$r = gvb_rechercher('curieux'); $t('contact de la plaquette', isset($r['contacts']));
+$t('moins de 2 caractères : rien', gvb_rechercher('a') === [] && gvb_rechercher('') === []);
+$t('« % » et « _ » ne ramènent pas tout (jokers neutralisés)', gvb_rechercher('%') === [] && gvb_rechercher('___') === []);
+$t('injection SQL inoffensive', gvb_rechercher("x' OR '1'='1") === [] && gvb_rechercher('"; DROP TABLE x; --') === [] && (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . gvb_table('etudiants')) === 2);
+$t('très longue requête tronquée sans erreur', is_array(gvb_rechercher(str_repeat('a', 500))));
+$t('étudiant aux balises HTML : échappé à l’affichage', (function () use ($wpdb) { $_GET = ['q' => '<script>alert(1)</script>']; ob_start(); gvb_page_recherche(); $h = ob_get_clean(); return !str_contains($h, '<script>alert(1)</script>') && str_contains($h, '&lt;script&gt;'); })());
+for ($i = 0; $i < 10; $i++) $demande('Multiple' . $i, 'Test', 'Licence 1', 'universite', '+223 70 00 0' . $i . ' 00');
+$r = gvb_rechercher('Multiple'); $t('liste limitée à 8 par rubrique avec indication « plus »', isset($r['demandes']) && count($r['demandes']['items']) === 8 && $r['demandes']['plus'] === true);
+
+$lignes[] = "\n## Droits et périmètre";
+wp_set_current_user($rpL); $r = gvb_rechercher('Diarra'); $t('Responsable du Lycée : ne trouve pas l’étudiant de l’Université', !isset($r['etudiants']) && !isset($r['demandes']));
+$r = gvb_rechercher('Sy'); $t('Responsable du Lycée : trouve celle du Lycée', isset($r['etudiants']) && isset($r['demandes']), json_encode(array_keys($r)));
+$r = gvb_rechercher('maman.awa'); $t('Responsable : pas de comptes ni de contacts (transversaux)', !isset($r['comptes']) && !isset($r['contacts']));
+wp_set_current_user($cpt); $r = gvb_rechercher('Diarra'); $t('Comptabilité : étudiants et reçus oui, comptes d’espaces non', isset($r['etudiants']) && !isset($r['comptes']), json_encode(array_keys($r)));
+$r = gvb_rechercher('REC-' . gmdate('Y')); $t('Comptabilité : trouve les reçus', isset($r['paiements']));
+wp_set_current_user($com); $r = gvb_rechercher('Diarra'); $t('Communication : aucun étudiant ni demande, mais les comptes et contacts', !isset($r['etudiants']) && !isset($r['demandes']) && isset($r['comptes']), json_encode(array_keys($r)));
+$r = gvb_rechercher('UNI-2026-0001'); $t('Communication : le matricule ne donne rien', $r === []);
+wp_set_current_user(0); $_GET = ['q' => 'Diarra']; $t('visiteur non connecté : écran refusé', (function () { try { gvb_page_recherche(); return false; } catch (Exception $e) { return str_starts_with($e->getMessage(), 'DIE:'); } })());
+
+$lignes[] = "\n## Écran de recherche";
+wp_set_current_user($dir); $_SERVER['REQUEST_METHOD'] = 'GET';
+$_GET = ['q' => 'UNI-2026-0001']; $t('matricule exact : redirection directe vers la fiche', (function () { try { ob_start(); gvb_page_recherche(); ob_end_clean(); return false; } catch (Exception $e) { ob_end_clean(); return str_starts_with($e->getMessage(), 'REDIR:') && str_contains($e->getMessage(), 'gv-etudiant'); } })());
+$_GET = ['q' => 'Diarra']; ob_start(); gvb_page_recherche(); $h = ob_get_clean(); $t('résultats groupés avec liens vers les fiches', str_contains($h, 'Étudiants et élèves') && str_contains($h, 'gv-etudiant') && str_contains($h, 'Demandes d’admission'));
+$_GET = ['q' => 'zzzzzz']; ob_start(); gvb_page_recherche(); $h = ob_get_clean(); $t('aucun résultat : message clair', str_contains($h, 'Aucun résultat pour'));
+$_GET = ['q' => 'Diarra', 'pour' => 'paiement']; ob_start(); gvb_page_recherche(); $h = ob_get_clean(); $t('mode « encaisser » : les étudiants mènent au compte financier', str_contains($h, 'gv-compte') && str_contains($h, 'Choisir l’étudiant à encaisser'));
+$_GET = []; ob_start(); gvb_page_recherche(); $h = ob_get_clean(); $t('écran vide : aide avec exemples', str_contains($h, 'au moins 2 caractères') && str_contains($h, 'UNI-2026-0001'));
+
+$lignes[] = "\n## « + Nouveau » et barre d'administration";
+$barre = function ($uid) { wp_set_current_user($uid); $b = new WP_Admin_Bar(); $b->initialize(); $b->add_menus(); do_action_ref_array('admin_bar_menu', [&$b]); return $b; };
+$b = $barre($sco); $ids = array_keys($b->get_nodes() ?: []);
+$t('barre : champ de recherche pour tous les profils', isset($b->get_nodes()['gvb-recherche']) && str_contains($b->get_nodes()['gvb-recherche']->title, 'name="q"'));
+$t('Scolarité : « + Nouveau » avec demande, séance, annonce, invitation, publication (pas de paiement)', in_array('gvb-nouveau-demande', $ids, true) && in_array('gvb-nouveau-seance', $ids, true) && in_array('gvb-nouveau-annonce', $ids, true) && in_array('gvb-nouveau-publication', $ids, true) && !in_array('gvb-nouveau-paiement', $ids, true), json_encode($ids));
+$b = $barre($cpt); $ids = array_keys($b->get_nodes()); $t('Comptabilité : « + Nouveau » = enregistrer un paiement seulement', in_array('gvb-nouveau-paiement', $ids, true) && !in_array('gvb-nouveau-demande', $ids, true) && !in_array('gvb-nouveau-annonce', $ids, true));
+$b = $barre($com); $ids = array_keys($b->get_nodes()); $t('Communication : publication, article, annonce, invitation', in_array('gvb-nouveau-publication', $ids, true) && in_array('gvb-nouveau-article', $ids, true) && in_array('gvb-nouveau-annonce', $ids, true) && !in_array('gvb-nouveau-demande', $ids, true) && !in_array('gvb-nouveau-paiement', $ids, true));
+$b = $barre($dir); $ids = array_keys($b->get_nodes()); $t('Direction : toutes les actions rapides', count(array_filter($ids, fn($i) => str_starts_with($i, 'gvb-nouveau-'))) >= 9, json_encode($ids));
+$t('« + Nouveau » : lien du paiement mène à la recherche d’étudiant', str_contains($b->get_node('gvb-nouveau-paiement')->href, 'gv-recherche') && str_contains($b->get_node('gvb-nouveau-paiement')->href, 'paiement'));
+wp_set_current_user($nul = $mk('subscriber', 'subscriber')); $bn = new WP_Admin_Bar(); $bn->initialize(); do_action_ref_array('admin_bar_menu', [&$bn]); $t('utilisateur sans accès : pas de recherche ni de « + Nouveau »', !isset($bn->get_nodes()['gvb-recherche']) && !isset($bn->get_nodes()['gvb-nouveau']));
+
+$lignes[] = "\n## Écrans épinglés et récents";
+wp_set_current_user($cpt); $_GET = ['page' => 'gv-finances'];
+$_SERVER['REQUEST_METHOD'] = 'GET'; ob_start(); gvb_debut('Finances', 'carte'); gvb_fin(); $h = ob_get_clean();
+$t('bouton « Épingler » en tête d’un écran de menu', str_contains($h, '☆ Épingler') && str_contains($h, 'gvb_epingler'));
+$_GET = ['page' => 'gv-demande', 'id' => '5']; ob_start(); gvb_debut('Demande', 'plus'); gvb_fin(); $h = ob_get_clean(); $t('pas de bouton sur un écran de détail', !str_contains($h, 'Épingler'));
+$r = $envoyer('gvb_epingler', 'gvb_epingler', ['page' => 'gv-finances']); $t('épinglage d’un écran accessible', str_contains($r, 'gv_msg') && gvb_epingles() === ['gv-finances'], $r);
+$r = $envoyer('gvb_epingler', 'gvb_epingler', ['page' => 'gv-reglages']); $t('un écran non accessible au profil ne s’épingle pas', str_contains($r, 'ne peut pas') && gvb_epingles() === ['gv-finances'], $r);
+$r = $envoyer('gvb_epingler', 'gvb_epingler', ['page' => 'users.php']); $t('un écran externe ne s’épingle pas', str_contains($r, 'ne peut pas'));
+$r = $envoyer('gvb_epingler', 'gvb_epingler', ['page' => 'gv-impayes']); $t('2e épingle', gvb_epingles() === ['gv-finances', 'gv-impayes']);
+$_GET = ['page' => 'gv-finances']; $_SERVER['REQUEST_METHOD'] = 'GET'; ob_start(); gvb_debut('Finances', 'carte'); gvb_fin(); $h = ob_get_clean(); $t('écran épinglé : bouton « Épinglé » (état pressé)', str_contains($h, '★ Épinglé') && str_contains($h, 'aria-pressed="true"'));
+$r = $envoyer('gvb_epingler', 'gvb_epingler', ['page' => 'gv-finances']); $t('un second clic retire l’épingle', gvb_epingles() === ['gv-impayes']);
+$b = $barre($cpt); $t('barre : menu « ★ Raccourcis » avec les écrans épinglés', isset($b->get_nodes()['gvb-favoris']) && isset($b->get_nodes()['gvb-fav-gv-impayes']));
+$pages = array_keys(gvb_pages_epinglables()); for ($i = 0; $i < 12; $i++) if (isset($pages[$i]) && !in_array($pages[$i], gvb_epingles(), true)) $envoyer('gvb_epingler', 'gvb_epingler', ['page' => $pages[$i]]);
+$t('limite de 8 épingles', count(gvb_epingles()) === GVB_EPINGLES_MAX, (string) count(gvb_epingles()));
+$r = $envoyer('gvb_epingler', 'gvb_epingler', ['page' => 'inconnu']); $t('écran inconnu refusé', str_contains($r, 'ne peut pas'));
+wp_set_current_user($sco); $_GET = ['page' => 'gv-etudiants']; $_SERVER['REQUEST_METHOD'] = 'GET'; ob_start(); gvb_debut('Étudiants', 'pole'); gvb_fin(); ob_end_clean();
+$_GET = ['page' => 'gv-etudiant', 'id' => '12', 'secret' => 'x']; ob_start(); gvb_debut('Fiche Awa', 'pole'); gvb_fin(); ob_end_clean();
+$_GET = ['page' => 'gv-etudiants']; ob_start(); gvb_debut('Étudiants', 'pole'); gvb_fin(); ob_end_clean();
+$rec = get_user_meta($sco, 'gvb_recents', true); $t('récents : 2 écrans, sans doublon, le plus récent en tête, paramètres filtrés', count($rec) === 2 && str_contains($rec[0][0], 'gv-etudiants') && str_contains($rec[1][0], 'id=12') && !str_contains(json_encode($rec), 'secret'), json_encode($rec));
+$_SERVER['REQUEST_METHOD'] = 'POST'; $_GET = ['page' => 'gv-planning']; ob_start(); gvb_debut('Planning', 'horloge'); gvb_fin(); ob_end_clean(); $t('les envois de formulaire (POST) ne sont pas mémorisés', count(get_user_meta($sco, 'gvb_recents', true)) === 2);
+$_SERVER['REQUEST_METHOD'] = 'GET'; $_GET = []; $h = gvb_bloc_epingles(); $t('bloc « Mes raccourcis » : récents listés, aide si aucune épingle', str_contains($h, 'Consultés récemment') && str_contains($h, 'Fiche Awa') && str_contains($h, 'Aucun écran épinglé'));
+wp_set_current_user($cpt); $h = gvb_bloc_epingles(); $t('bloc « Mes raccourcis » : boutons épinglés', str_contains($h, '★'));
+wp_set_current_user($cpt); $_GET = []; ob_start(); gvb_page_tableau(); $h = ob_get_clean(); $t('accueil de la Comptabilité : bloc des raccourcis présent', str_contains($h, 'Mes raccourcis'));
+$r = $envoyer('gvb_epingler', 'mauvais-nonce', ['page' => 'gv-finances']); $t('jeton de sécurité invalide refusé', str_starts_with($r, 'DIE:') || $r === 'rien');
+
+file_put_contents('/wordpress/wp-content/out/resultat.txt', implode("\n", $lignes) . "\n\n=== $ok réussis, $ko échecs ===\n");

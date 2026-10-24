@@ -63,6 +63,7 @@ function gvb_blocs_catalogue() {
         'communication' => ['Communication', 'rapport', ['publications', 'voir'], 'gvb_bloc_communication'],
         'espaces' => ['Espaces en ligne', 'utilisateurs', ['espaces', 'voir'], 'gvb_bloc_espaces'],
         'annonces_recentes' => ['Dernières annonces', 'journal', ['espaces', 'voir'], 'gvb_bloc_annonces'],
+        'epingles' => ['Mes raccourcis', 'etoile', ['gv_acces'], 'gvb_bloc_epingles'],
     ];
 }
 function gvb_bloc_autorise($id) {
@@ -79,11 +80,11 @@ function gvb_bloc_autorise_pour($id, $user) {
 }
 function gvb_accueil_defauts($profil) {
     $d = [
-        'gv_direction' => ['taches', 'pilotage_resume', 'finances_jour', 'inscrits', 'communication'],
-        'gv_scolarite' => ['taches', 'admissions', 'inscrits', 'pedagogie_semaine', 'raccourcis'],
-        'gv_comptabilite' => ['taches', 'finances_jour', 'raccourcis'],
-        'gv_responsable_pole' => ['taches', 'admissions', 'pedagogie_semaine', 'inscrits'],
-        'gv_communication' => ['communication', 'taches', 'annonces_recentes', 'raccourcis'],
+        'gv_direction' => ['taches', 'pilotage_resume', 'finances_jour', 'inscrits', 'communication', 'epingles'],
+        'gv_scolarite' => ['taches', 'admissions', 'inscrits', 'pedagogie_semaine', 'raccourcis', 'epingles'],
+        'gv_comptabilite' => ['taches', 'finances_jour', 'raccourcis', 'epingles'],
+        'gv_responsable_pole' => ['taches', 'admissions', 'pedagogie_semaine', 'inscrits', 'epingles'],
+        'gv_communication' => ['communication', 'taches', 'annonces_recentes', 'raccourcis', 'epingles'],
     ];
     return $d[$profil] ?? ['taches'];
 }
