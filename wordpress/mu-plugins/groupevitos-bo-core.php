@@ -636,6 +636,75 @@ add_action('admin_menu', function () {
     foreach ($menu as $i => $item) if (($item[2] ?? '') === 'upload.php') $menu[$i][0] = 'Médias';
 }, 9998);
 
+// Menu de l'administrateur : les écrans métier, le contenu du site et la technique, en blocs titrés
+// Blocs : [titre du bloc ('' = sans titre), éléments (parents du menu)] ; ce qui n'est pas listé tombe dans le dernier bloc.
+function gvb_menu_blocs() {
+    $p = $GLOBALS['gvb_parents'] ?? [];
+    $types = function_exists('gv_types') ? array_map(fn($t) => 'edit.php?post_type=' . $t, array_keys(gv_types())) : [];
+    return [
+        ['', [$p['accueil'] ?? 'gv']],
+        ['Établissement', array_values(array_filter([$p['scolarite'] ?? '', $p['pedagogie'] ?? '', $p['finances'] ?? '', $p['communication'] ?? '']))],
+        ['Site public', array_merge(['edit.php', 'edit.php?post_type=formation'], $types, ['edit.php?post_type=page', 'upload.php'])],
+        ['Système', array_values(array_filter([$p['admin'] ?? '', GVB_MENU_OUTILS_SLUG]))],
+    ];
+}
+// Tous les outils d'administration de WordPress dans un seul menu (renommer ici le menu)
+const GVB_MENU_OUTILS = 'Outils WordPress';
+const GVB_MENU_OUTILS_SLUG = 'gvb-outils-wp';
+const GVB_OUTILS_NATIFS = ['edit-comments.php', 'themes.php', 'plugins.php', 'tools.php', 'options-general.php'];
+function gvb_menu_regrouper() {
+    global $menu;
+    if (!current_user_can('manage_options') || !current_user_can('gv_acces') || !is_array($menu)) return;
+    $trouves = [];
+    foreach ($menu as $item) if (!empty($item[2]) && in_array($item[2], GVB_OUTILS_NATIFS, true)) $trouves[$item[2]] = $item;
+    if (!$trouves) return;
+    add_menu_page(GVB_MENU_OUTILS, GVB_MENU_OUTILS, 'manage_options', GVB_MENU_OUTILS_SLUG, '', 'dashicons-admin-tools', 99);
+    foreach (GVB_OUTILS_NATIFS as $slug) {
+        if (!isset($trouves[$slug])) continue;
+        add_submenu_page(GVB_MENU_OUTILS_SLUG, wp_strip_all_tags($trouves[$slug][0]), gvb_menu_francais($trouves[$slug][0]), $trouves[$slug][1], $slug);
+        remove_menu_page($slug);
+    }
+    // Écrans de réglages sans lien ailleurs une fois les menus natifs regroupés
+    if (isset($trouves['options-general.php'])) add_submenu_page(GVB_MENU_OUTILS_SLUG, 'Permaliens', 'Permaliens', 'manage_options', 'options-permalink.php');
+    // WordPress ajoute en tête une entrée identique au menu parent (page inexistante) : le lien du menu doit mener au premier outil
+    global $submenu;
+    if (!empty($submenu[GVB_MENU_OUTILS_SLUG]) && $submenu[GVB_MENU_OUTILS_SLUG][0][2] === GVB_MENU_OUTILS_SLUG) $submenu[GVB_MENU_OUTILS_SLUG] = array_values(array_slice($submenu[GVB_MENU_OUTILS_SLUG], 1));
+}
+add_action('admin_menu', 'gvb_menu_regrouper', 9990);
+function gvb_menu_francais($libelle) {
+    return str_replace(['Comments', 'Appearance', 'Plugins', 'Tools', 'Settings'], ['Commentaires', 'Apparence', 'Extensions', 'Outils', 'Réglages WordPress'], $libelle);
+}
+function gvb_menu_structurer() {
+    global $menu;
+    if (!current_user_can('manage_options') || !current_user_can('gv_acces') || !is_array($menu)) return;
+    // Écrans déjà accessibles ailleurs : tableau de bord (redirigé), utilisateurs (section Administration), candidatures (section Communication)
+    $retirer = ['index.php', 'users.php', 'edit.php?post_type=candidature'];
+    $parent = []; $reste = [];
+    foreach ($menu as $item) {
+        if (empty($item[2]) || str_starts_with((string) ($item[4] ?? ''), 'wp-menu-separator') || in_array($item[2], $retirer, true)) continue;
+        $item[0] = gvb_menu_francais($item[0]);
+        if ($item[2] === 'edit.php') $item[0] = 'Actualités';
+        if ($item[2] === 'upload.php') $item[0] = 'Médias';
+        $parent[$item[2]] = $item; $reste[$item[2]] = true;
+    }
+    $nouveau = []; $n = 0; $s = 0;
+    $GLOBALS['gvb_blocs'] = []; $blocs = gvb_menu_blocs(); $dernier = count($blocs) - 1;
+    foreach ($blocs as $b => [$titre, $slugs]) {
+        $present = array_values(array_filter($slugs, fn($x) => isset($parent[$x])));
+        if ($b === $dernier) foreach (array_keys($reste) as $x) if (!in_array($x, $present, true) && !in_array($x, array_merge(...array_column($blocs, 1)), true)) $present[] = $x;
+        if (!$present) continue;
+        if ($titre !== '') { $GLOBALS['gvb_blocs']['gvb-bloc-' . ++$s] = $titre; $nouveau[(string) (++$n * 10)] = ['', 'read', 'gvb-bloc-' . $s, '', 'wp-menu-separator gvb-bloc', 'gvb-bloc-' . $s]; }
+        foreach ($present as $x) { if (!isset($reste[$x])) continue; unset($reste[$x]); $nouveau[(string) (++$n * 10)] = $parent[$x]; }
+    }
+    $menu = $nouveau;
+}
+add_action('admin_menu', 'gvb_menu_structurer', 9999);
+add_action('admin_head', function () {
+    $css = '';
+    foreach ($GLOBALS['gvb_blocs'] ?? [] as $id => $titre) $css .= '#' . esc_attr($id) . ' .separator::before{content:"' . esc_attr($titre) . '"}';
+    if ($css) echo '<style>#adminmenu li.gvb-bloc{height:auto;margin:0;padding:0}#adminmenu li.gvb-bloc .separator{height:auto;margin:0;padding:16px 12px 6px;border-top:1px solid rgba(255,255,255,.12)}#adminmenu li.gvb-bloc .separator::before{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#FFC23D}' . $css . '</style>';
+}, 20);
+
 add_action('admin_init', function () {
     global $pagenow;
     if ($pagenow === 'index.php' && !wp_doing_ajax() && is_user_logged_in()) { wp_safe_redirect(current_user_can('gv_acces') ? gvb_url('gv') : admin_url('profile.php')); exit; }
@@ -678,7 +747,7 @@ add_action('admin_head', function () {
 #adminmenuback,#adminmenuwrap,#adminmenu{background:#08065B}#adminmenu a{color:#E1E7FA}#adminmenu li.menu-top:hover,#adminmenu li.opensub>a.menu-top{background:#1B1A7A;color:#fff}
 #adminmenu .wp-has-current-submenu .wp-submenu,#adminmenu .wp-submenu{background:#1B1A7A}#adminmenu .wp-submenu li.current a{box-shadow:inset 4px 0 0 #FFC23D}#adminmenu .gvb-mi svg{color:#FFC23D}#adminmenu li.current a.menu-top,#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,#adminmenu .wp-submenu li.current a{background:#1F4FFF;color:#fff;font-weight:600}
 #adminmenu .wp-submenu a{color:#C9D3F5}#adminmenu .wp-submenu a:hover{color:#fff;background:#2A2995}#adminmenu li.gvb-cache,#adminmenu li:has(> a[href$="page=gv-demande"]),#adminmenu li:has(> a[href$="page=gv-inscription"]){display:none}
-#adminmenu .gvb-mi{display:inline-flex;vertical-align:-3px;margin-right:8px}#adminmenu .update-plugins{background:#FFC23D;color:#08065B;font-weight:700}#wpadminbar{background:#08065B}#wpadminbar .ab-item,#wpadminbar a.ab-item{color:#E1E7FA}#adminmenu #menu-posts::before{content:"Actualités du site";display:block;padding:14px 12px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9FB0EA}
+#adminmenu .gvb-mi{display:inline-flex;vertical-align:-3px;margin-right:8px}#adminmenu .update-plugins{background:#FFC23D;color:#08065B;font-weight:700}#wpadminbar{background:#08065B}#wpadminbar .ab-item,#wpadminbar a.ab-item{color:#E1E7FA}
 .gvb{max-width:1280px;--ink:#08065B;--blue:#1F4FFF;--vert:#007A2E;--ligne:#D6DCEB;--fond:#F2F4F9;--muted:#4A5578;color:#111827}
 .gvb-entete{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 14px}.gvb-entete h1{display:flex;align-items:center;gap:10px;margin:0;padding:0;font-size:26px;color:var(--ink);font-weight:800}
 .gvb-titre-icone{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--ink);color:#FFC23D;box-shadow:0 3px 0 #FFC23D}.gvb-entete-actions{display:flex;flex-wrap:wrap;gap:8px}
