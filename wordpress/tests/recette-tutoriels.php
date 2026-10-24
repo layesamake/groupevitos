@@ -5,6 +5,7 @@ $lignes = []; $ok = 0; $ko = 0;
 $t = function ($nom, $cond, $detail = '') use (&$lignes, &$ok, &$ko) { $cond ? $ok++ : $ko++; $lignes[] = ($cond ? '  ok  ' : ' ECHEC ') . $nom . (!$cond && $detail !== '' ? ' — ' . substr($detail, 0, 500) : ''); };
 register_shutdown_function(function () { $e = error_get_last(); if ($e && in_array($e['type'], [E_ERROR, E_PARSE], true)) file_put_contents('/wordpress/wp-content/out/fatal.txt', print_r($e, true)); });
 require '/wordpress/wp-load.php';
+require_once ABSPATH . WPINC . '/class-wp-admin-bar.php';
 do_action('init');
 add_filter('wp_die_handler', fn() => function ($m) { throw new Exception('DIE:' . (is_wp_error($m) ? $m->get_error_message() : (string) $m)); });
 gvb_synchroniser_roles();
@@ -31,11 +32,15 @@ foreach (['direction' => $dir, 'scolarité' => $sco, 'comptabilité' => $cpt, 'r
 }
 $h = $page($nul); $t('un compte sans accès métier est refusé', str_starts_with($h, 'DIE:'));
 wp_set_current_user(0); $_GET = []; ob_start(); try { gvb_page_tutoriels(); $r = 'affichée'; } catch (Exception $e) { $r = $e->getMessage(); } ob_end_clean(); $t('un visiteur non connecté est refusé', str_starts_with($r, 'DIE:'));
-$sections = []; foreach (gvb_menu_sections() as $s) foreach ($s[3] as $i) if ($i[1] === 'gv-tutoriels') $sections[] = $i[2];
-$t('l’entrée de menu exige l’accès au back-office', $sections === ['gv_acces']);
-$vus = 0; foreach ([$dir, $sco, $cpt, $rp, $com] as $uid) foreach (gvb_menu_visible(get_userdata($uid)) as $sec) foreach ($sec['items'] as $i) if ($i[1] === 'gv-tutoriels') $vus++;
-$t('l’entrée « Tutoriels » est visible dans le menu des cinq profils', $vus === 5, (string) $vus);
-$v = gvb_menu_visible(get_userdata($nul)); $t('et absente pour un compte sans accès', !$v);
+$t('page déclarée parmi les écrans cachés, réservée à l’accès au back-office', (GVB_PAGES_CACHEES['gv-tutoriels'][1] ?? '') === 'gv_acces');
+$dansMenu = 0; foreach (gvb_menu_sections() as $s) foreach ($s[3] as $i) if ($i[1] === 'gv-tutoriels') $dansMenu++;
+$t('plus d’entrée « Tutoriels » dans le menu de gauche', $dansMenu === 0);
+$barre = function ($uid) { wp_set_current_user($uid); $b = new WP_Admin_Bar(); $b->initialize(); do_action_ref_array('admin_bar_menu', [&$b]); return $b; };
+foreach (['direction' => $dir, 'scolarité' => $sco, 'comptabilité' => $cpt, 'responsable' => $rp, 'communication' => $com] as $nom => $uid) {
+    $n = $barre($uid)->get_node('gvb-tutoriels'); $t("$nom : bouton « Tutoriels » dans la barre du haut", $n && $n->title === 'Tutoriels' && str_contains((string) $n->href, 'gv-tutoriels'));
+}
+$ids = array_keys($barre($sco)->get_nodes()); $t('le bouton suit « + Nouveau » dans la barre', array_search('gvb-tutoriels', $ids, true) > array_search('gvb-nouveau', $ids, true));
+$t('compte sans accès : pas de bouton', !$barre($nul)->get_node('gvb-tutoriels'));
 
 $lignes[] = "\n## Affichage";
 $h = $page($sco); $t('« Votre profil » signale le tutoriel de la Scolarité', preg_match('/Scolarité<span class="gvt-etiquette">Votre profil/', $h) === 1);

@@ -569,13 +569,13 @@ function gvb_debut($titre, $icone = '', $actions = '') {
 function gvb_fin() { echo '</div>'; }
 
 // ── Menu GROUPE VITOS ─────────────────────────────────────────────────────────
-const GVB_PAGES_CACHEES = ['gv-preferences' => ['Mes préférences', 'gv_acces', 'gvb_page_preferences'], 'gv-recherche' => ['Recherche', 'gv_acces', 'gvb_page_recherche'], 'gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant'], 'gv-seance' => ['Appel', 'gv_planning_voir', 'gvb_page_seance'], 'gv-enseignant' => ['Fiche enseignant', 'gv_pedagogie_voir', 'gvb_page_enseignant'], 'gv-compte' => ['Compte financier', 'gv_finances_voir', 'gvb_page_compte'], 'gv-recu' => ['Reçu', 'gv_finances_voir', 'gvb_page_recu']];
+const GVB_PAGES_CACHEES = ['gv-preferences' => ['Mes préférences', 'gv_acces', 'gvb_page_preferences'], 'gv-recherche' => ['Recherche', 'gv_acces', 'gvb_page_recherche'], 'gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant'], 'gv-seance' => ['Appel', 'gv_planning_voir', 'gvb_page_seance'], 'gv-enseignant' => ['Fiche enseignant', 'gv_pedagogie_voir', 'gvb_page_enseignant'], 'gv-compte' => ['Compte financier', 'gv_finances_voir', 'gvb_page_compte'], 'gv-recu' => ['Reçu', 'gv_finances_voir', 'gvb_page_recu'], 'gv-tutoriels' => ['Tutoriels', 'gv_acces', 'gvb_page_tutoriels']];
 
 const GVB_EXTERNES = ['users.php', 'edit.php?post_type=candidature'];
 // Sections du menu : [titre, icône WordPress, position, éléments [titre, slug, droit, fonction, pictogramme, compteur]]
 function gvb_menu_sections() {
     return [
-        'accueil' => ['GROUPE VITO S.', 'dashicons-welcome-learn-more', 2, [['Accueil', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau', null], ['Pilotage', 'gv-pilotage', 'gv_pilotage_voir', 'gvb_page_pilotage', 'rapport', null], ['Tutoriels', 'gv-tutoriels', 'gv_acces', 'gvb_page_tutoriels', 'etude', null]]],
+        'accueil' => ['GROUPE VITO S.', 'dashicons-welcome-learn-more', 2, [['Accueil', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau', null], ['Pilotage', 'gv-pilotage', 'gv_pilotage_voir', 'gvb_page_pilotage', 'rapport', null]]],
         'scolarite' => ['Scolarité', 'dashicons-id-alt', 3, [['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission', 'admissions'], ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription', 'a_inscrire'], ['Étudiants', 'gv-etudiants', 'gv_etudiants_voir', 'gvb_page_etudiants', 'pole', null], ['Absences', 'gv-absences', 'gv_planning_voir', 'gvb_page_absences', 'alerte', null]]],
         'pedagogie' => ['Pédagogie', 'dashicons-book-alt', 4, [['Programmes', 'gv-programmes', 'gv_pedagogie_voir', 'gvb_page_programmes', 'liste', 'non_couverts'], ['Enseignants', 'gv-enseignants', 'gv_pedagogie_voir', 'gvb_page_enseignants', 'cv', null], ['Charges horaires', 'gv-charges', 'gv_pedagogie_voir', 'gvb_page_charges', 'horloge', null], ['Emploi du temps', 'gv-planning', 'gv_planning_voir', 'gvb_page_planning', 'horloge', 'sans_appel'], ['Salles', 'gv-salles', 'gv_planning_voir', 'gvb_page_salles', 'inscription', null]]],
         'finances' => ['Finances', 'dashicons-money-alt', 5, [['Finances', 'gv-finances', 'gv_finances_voir', 'gvb_page_finances', 'carte', null], ['Impayés', 'gv-impayes', 'gv_finances_voir', 'gvb_page_impayes', 'alerte', 'impayes']]],
@@ -619,7 +619,7 @@ add_action('admin_menu', function () {
 }, 9999);
 // Un écran de détail garde sa section et son entrée de menu actives
 add_filter('parent_file', function ($pf) {
-    $carte = ['gv-demande' => ['scolarite', 'gv-admissions'], 'gv-inscription' => ['scolarite', 'gv-inscriptions'], 'gv-etudiant' => ['scolarite', 'gv-etudiants'], 'gv-seance' => ['pedagogie', 'gv-planning'], 'gv-enseignant' => ['pedagogie', 'gv-enseignants'], 'gv-compte' => ['finances', 'gv-finances'], 'gv-recu' => ['finances', 'gv-finances']];
+    $carte = ['gv-demande' => ['scolarite', 'gv-admissions'], 'gv-inscription' => ['scolarite', 'gv-inscriptions'], 'gv-etudiant' => ['scolarite', 'gv-etudiants'], 'gv-seance' => ['pedagogie', 'gv-planning'], 'gv-enseignant' => ['pedagogie', 'gv-enseignants'], 'gv-compte' => ['finances', 'gv-finances'], 'gv-recu' => ['finances', 'gv-finances'], 'gv-tutoriels' => ['accueil', 'gv']];
     $p = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
     if (isset($carte[$p]) && !empty($GLOBALS['gvb_parents'][$carte[$p][0]])) { $GLOBALS['gvb_sous_menu'] = $carte[$p][1]; return $GLOBALS['gvb_parents'][$carte[$p][0]]; }
     return $pf;
