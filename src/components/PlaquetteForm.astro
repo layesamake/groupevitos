@@ -52,7 +52,7 @@ const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-j
       form.reset(); sync();
       status.textContent = answer.canal === 'whatsapp'
         ? 'Merci ! Notre équipe vous envoie la plaquette sur WhatsApp.'
-        : 'Merci ! La plaquette vient de vous être envoyée par e-mail (pensez à vérifier vos courriers indésirables).';
+        : 'Merci ! La plaquette vient de vous être envoyée par e-mail (si vous ne la voyez pas, regardez les onglets Promotions et Courrier indésirable).';
     } catch (error) {
       status.textContent = (error as Error).message;
     } finally { button.disabled = false; }
