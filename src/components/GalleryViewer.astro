@@ -1,0 +1,90 @@
+---
+// Visionneuse plein écran des galeries : navigue parmi les photos visibles (donc de la catégorie filtrée).
+// Les photos à ouvrir sont des boutons `.gallery__open` (data-full, data-alt, data-caption) dans un conteneur `[data-gallery]`.
+---
+<dialog class="lb" aria-label="Visionneuse de photos">
+  <div class="lb__bar">
+    <p class="lb__count" aria-live="polite"></p>
+    <button type="button" class="lb__btn lb__close" aria-label="Fermer la visionneuse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+  </div>
+  <button type="button" class="lb__btn lb__nav lb__prev" aria-label="Photo précédente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+  <figure class="lb__stage">
+    <img class="lb__img" alt="" decoding="async" />
+    <figcaption class="lb__caption"></figcaption>
+  </figure>
+  <button type="button" class="lb__btn lb__nav lb__next" aria-label="Photo suivante"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></button>
+</dialog>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('.lb');
+  if (dialog) {
+    const img = dialog.querySelector<HTMLImageElement>('.lb__img')!;
+    const caption = dialog.querySelector<HTMLElement>('.lb__caption')!;
+    const count = dialog.querySelector<HTMLElement>('.lb__count')!;
+    const nav = dialog.querySelectorAll<HTMLElement>('.lb__nav');
+    let items: HTMLElement[] = [];
+    let index = 0;
+    let opener: HTMLElement | null = null;
+
+    const collect = () => { items = [...document.querySelectorAll<HTMLElement>('[data-gallery] figure:not([hidden]) .gallery__open')]; };
+    const preload = (position: number) => { const full = items[(position + items.length) % items.length]?.dataset.full; if (full) new Image().src = full; };
+
+    function show(position: number) {
+      if (!items.length) return;
+      index = (position + items.length) % items.length;
+      const button = items[index];
+      const full = button.dataset.full ?? '';
+      if (img.getAttribute('src') !== full) {
+        img.classList.add('is-loading');
+        img.onload = () => img.classList.remove('is-loading');
+        img.onerror = () => img.classList.remove('is-loading');
+        img.src = full;
+        if (img.complete && img.naturalWidth) img.classList.remove('is-loading');
+      }
+      img.alt = button.dataset.alt ?? '';
+      const category = button.closest('figure')?.dataset.category;
+      caption.textContent = [category, button.dataset.caption && button.dataset.caption !== category ? button.dataset.caption : ''].filter(Boolean).join(' — ');
+      count.textContent = `${index + 1} / ${items.length}`;
+      nav.forEach(control => { control.hidden = items.length < 2; });
+      preload(index + 1); preload(index - 1);
+    }
+
+    function open(button: HTMLElement) {
+      collect();
+      const position = items.indexOf(button);
+      if (position < 0) return;
+      opener = button;
+      img.removeAttribute('src');
+      show(position);
+      document.documentElement.classList.add('lb-open');
+      dialog!.showModal();
+    }
+
+    document.addEventListener('click', event => {
+      const button = (event.target as HTMLElement).closest<HTMLElement>('.gallery__open');
+      if (button) open(button);
+    });
+    dialog.querySelector('.lb__close')!.addEventListener('click', () => dialog.close());
+    dialog.querySelector('.lb__prev')!.addEventListener('click', () => show(index - 1));
+    dialog.querySelector('.lb__next')!.addEventListener('click', () => show(index + 1));
+    // Clic sur le fond sombre : fermeture
+    dialog.addEventListener('click', event => { const cible = event.target as HTMLElement; if (cible === dialog || cible.classList.contains('lb__stage')) dialog.close(); });
+    dialog.addEventListener('keydown', event => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); show(index - 1); }
+      else if (event.key === 'ArrowRight') { event.preventDefault(); show(index + 1); }
+      else if (event.key === 'Home') { event.preventDefault(); show(0); }
+      else if (event.key === 'End') { event.preventDefault(); show(items.length - 1); }
+    });
+    dialog.addEventListener('close', () => { document.documentElement.classList.remove('lb-open'); opener?.focus(); });
+
+    // Balayage du doigt : photo suivante / précédente
+    let startX = 0;
+    let startY = 0;
+    dialog.addEventListener('touchstart', event => { startX = event.touches[0].clientX; startY = event.touches[0].clientY; }, { passive: true });
+    dialog.addEventListener('touchend', event => {
+      const dx = event.changedTouches[0].clientX - startX;
+      const dy = event.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) show(index + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+  }
+</script>

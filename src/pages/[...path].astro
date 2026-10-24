@@ -7,6 +7,7 @@ import Eyebrow from '../components/Eyebrow.astro';
 import FormationCard from '../components/FormationCard.astro';
 import FamilyFilter from '../components/FamilyFilter.astro';
 import Tarifs from '../components/Tarifs.astro';
+import GalleryViewer from '../components/GalleryViewer.astro';
 import CandidatureForm from '../components/CandidatureForm.astro';
 import AdmissionForm from '../components/AdmissionForm.astro';
 import { familiesOf, getContent, pageBySlug, pathOf, type Entry } from '../lib/wordpress';
@@ -57,7 +58,18 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
           <button type="button" aria-pressed="true" data-category="">Toutes</button>
           {categories.map(category => <button type="button" aria-pressed="false" data-category={category}>{category}</button>)}
         </div>}
-        <div class="gallery">{photos.map((photo, index) => <figure data-category={photo.caption}><Picture img={image(byFile(photo.src), photo.alt || photo.caption)} sizes={index % 5 === 0 ? '(min-width: 900px) 50vw, 100vw' : '(min-width: 900px) 25vw, 50vw'} />{photo.caption && <figcaption>{photo.caption}</figcaption>}</figure>)}</div>
+        <div class="gallery" data-gallery>{photos.map((photo, index) => {
+          const img = image(byFile(photo.src), photo.alt || photo.caption);
+          const label = photo.alt || photo.caption || 'photo';
+          return <figure data-category={photo.caption} style={`--i:${index % 8}`}>
+            <button type="button" class="gallery__open" data-full={img?.src ?? photo.src} data-alt={img?.alt ?? label} data-caption={photo.caption} aria-label={`Agrandir : ${label}`}>
+              <Picture img={img} sizes={index % 5 === 0 ? '(min-width: 900px) 50vw, 100vw' : '(min-width: 900px) 25vw, 50vw'} />
+              <span class="gallery__zoom" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="M20 20l-4.2-4.2M11 8.5v5M8.5 11h5" /></svg></span>
+            </button>
+            {photo.caption && <figcaption>{photo.caption}</figcaption>}
+          </figure>;
+        })}</div>
+        <GalleryViewer />
       </div>
     </section>
   ) : isPole && mine ? <>
@@ -166,12 +178,30 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
     </section>
   )}
 
-  {categories.length > 1 && <script>
+  {slug === 'galeries' && photos.length > 0 && <script>
+    const gallery = document.querySelector<HTMLElement>('[data-gallery]');
+    const figures = [...(gallery?.querySelectorAll<HTMLElement>('figure') ?? [])];
+
+    // Apparition échelonnée au défilement (sans animation si l'utilisateur la désactive)
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const observer = !calm && 'IntersectionObserver' in window
+      ? new IntersectionObserver(entries => entries.forEach(entry => {
+          if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer?.unobserve(entry.target); }
+        }), { rootMargin: '0px 0px -8% 0px' })
+      : null;
+    const reveal = () => {
+      if (!observer) return;
+      figures.forEach(figure => { figure.classList.remove('is-visible'); observer.unobserve(figure); if (!figure.hidden) observer.observe(figure); });
+    };
+    if (observer) { gallery?.classList.add('is-ready'); reveal(); }
+
+    // Filtre par catégorie
     const group = document.querySelector<HTMLElement>('[data-gallery-filter]');
     const buttons = group?.querySelectorAll<HTMLButtonElement>('button') ?? [];
     buttons.forEach(button => button.addEventListener('click', () => {
       buttons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
-      document.querySelectorAll<HTMLElement>('.gallery figure').forEach(figure => { figure.hidden = !!button.dataset.category && figure.dataset.category !== button.dataset.category; });
+      figures.forEach(figure => { figure.hidden = !!button.dataset.category && figure.dataset.category !== button.dataset.category; });
+      reveal();
     }));
   </script>}
 </Base>
