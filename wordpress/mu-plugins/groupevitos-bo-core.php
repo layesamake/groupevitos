@@ -636,7 +636,7 @@ add_action('admin_menu', function () {
     foreach ($menu as $i => $item) if (($item[2] ?? '') === 'upload.php') $menu[$i][0] = 'Médias';
 }, 9998);
 
-// Menu de l'administrateur : les écrans métier, le contenu du site et la technique, en blocs titrés
+// Menu en blocs titrés (tous les profils) : les écrans métier, le contenu du site et la technique
 // Blocs : [titre du bloc ('' = sans titre), éléments (parents du menu)] ; ce qui n'est pas listé tombe dans le dernier bloc.
 function gvb_menu_blocs() {
     $p = $GLOBALS['gvb_parents'] ?? [];
@@ -676,7 +676,7 @@ function gvb_menu_francais($libelle) {
 }
 function gvb_menu_structurer() {
     global $menu;
-    if (!current_user_can('manage_options') || !current_user_can('gv_acces') || !is_array($menu)) return;
+    if (!current_user_can('gv_acces') || !is_array($menu)) return;
     // Écrans déjà accessibles ailleurs : tableau de bord (redirigé), utilisateurs (section Administration), candidatures (section Communication)
     $retirer = ['index.php', 'users.php', 'edit.php?post_type=candidature'];
     $parent = []; $reste = [];
@@ -688,12 +688,14 @@ function gvb_menu_structurer() {
         $parent[$item[2]] = $item; $reste[$item[2]] = true;
     }
     $nouveau = []; $n = 0; $s = 0;
+    // Un menu très court (moins de quatre entrées) n'a pas besoin de titres de blocs
+    $titres = current_user_can('manage_options') || count($parent) >= 4;
     $GLOBALS['gvb_blocs'] = []; $blocs = gvb_menu_blocs(); $dernier = count($blocs) - 1;
     foreach ($blocs as $b => [$titre, $slugs]) {
         $present = array_values(array_filter($slugs, fn($x) => isset($parent[$x])));
         if ($b === $dernier) foreach (array_keys($reste) as $x) if (!in_array($x, $present, true) && !in_array($x, array_merge(...array_column($blocs, 1)), true)) $present[] = $x;
         if (!$present) continue;
-        if ($titre !== '') { $GLOBALS['gvb_blocs']['gvb-bloc-' . ++$s] = $titre; $nouveau[(string) (++$n * 10)] = ['', 'read', 'gvb-bloc-' . $s, '', 'wp-menu-separator gvb-bloc', 'gvb-bloc-' . $s]; }
+        if ($titre !== '' && $titres) { $GLOBALS['gvb_blocs']['gvb-bloc-' . ++$s] = $titre; $nouveau[(string) (++$n * 10)] = ['', 'read', 'gvb-bloc-' . $s, '', 'wp-menu-separator gvb-bloc', 'gvb-bloc-' . $s]; }
         foreach ($present as $x) { if (!isset($reste[$x])) continue; unset($reste[$x]); $nouveau[(string) (++$n * 10)] = $parent[$x]; }
     }
     $menu = $nouveau;
