@@ -145,6 +145,7 @@ function gvb_page_etudiant() {
             . gvb_champ('motif', 'Motif (obligatoire sauf pour « Actif »)', '', 'text', 'maxlength="255"') . gvb_bouton('Appliquer') . '</form></div>';
     }
     echo '</div></div>';
+    do_action('gvb_fiche_etudiant_apres', $e);
     gvb_fin();
 }
 
