@@ -33,7 +33,7 @@ add_action('init', function () {
     update_option('gvb_db_fb', '1', false);
 }, 5);
 
-function gvb_fb_reglages() { return wp_parse_args(get_option('gvb_facebook', []), ['page_id' => '61596039230928', 'jeton' => '', 'actif' => 0]); }
+function gvb_fb_reglages() { return wp_parse_args(get_option('gvb_facebook', []), ['page_id' => '1376716678856765', 'jeton' => '', 'actif' => 0]); }
 
 // Appel à l'API Graph. Le jeton n'apparaît jamais dans un message d'erreur.
 function gvb_fb_appel($methode, $chemin, array $params = []) {
