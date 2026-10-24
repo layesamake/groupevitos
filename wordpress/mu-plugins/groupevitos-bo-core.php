@@ -569,26 +569,66 @@ function gvb_fin() { echo '</div>'; }
 // ── Menu GROUPE VITOS ─────────────────────────────────────────────────────────
 const GVB_PAGES_CACHEES = ['gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant'], 'gv-seance' => ['Appel', 'gv_planning_voir', 'gvb_page_seance'], 'gv-enseignant' => ['Fiche enseignant', 'gv_pedagogie_voir', 'gvb_page_enseignant'], 'gv-compte' => ['Compte financier', 'gv_finances_voir', 'gvb_page_compte'], 'gv-recu' => ['Reçu', 'gv_finances_voir', 'gvb_page_recu']];
 
+const GVB_EXTERNES = ['users.php', 'edit.php?post_type=candidature'];
+// Sections du menu : [titre, icône WordPress, position, éléments [titre, slug, droit, fonction, pictogramme, compteur]]
+function gvb_menu_sections() {
+    return [
+        'accueil' => ['GROUPE VITO S.', 'dashicons-welcome-learn-more', 2, [['Accueil', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau', null], ['Pilotage', 'gv-pilotage', 'gv_pilotage_voir', 'gvb_page_pilotage', 'rapport', null]]],
+        'scolarite' => ['Scolarité', 'dashicons-id-alt', 3, [['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission', 'admissions'], ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription', 'a_inscrire'], ['Étudiants', 'gv-etudiants', 'gv_etudiants_voir', 'gvb_page_etudiants', 'pole', null], ['Absences', 'gv-absences', 'gv_planning_voir', 'gvb_page_absences', 'alerte', null]]],
+        'pedagogie' => ['Pédagogie', 'dashicons-book-alt', 4, [['Programmes', 'gv-programmes', 'gv_pedagogie_voir', 'gvb_page_programmes', 'liste', 'non_couverts'], ['Enseignants', 'gv-enseignants', 'gv_pedagogie_voir', 'gvb_page_enseignants', 'cv', null], ['Charges horaires', 'gv-charges', 'gv_pedagogie_voir', 'gvb_page_charges', 'horloge', null], ['Emploi du temps', 'gv-planning', 'gv_planning_voir', 'gvb_page_planning', 'horloge', 'sans_appel'], ['Salles', 'gv-salles', 'gv_planning_voir', 'gvb_page_salles', 'inscription', null]]],
+        'finances' => ['Finances', 'dashicons-money-alt', 5, [['Finances', 'gv-finances', 'gv_finances_voir', 'gvb_page_finances', 'carte', null], ['Impayés', 'gv-impayes', 'gv_finances_voir', 'gvb_page_impayes', 'alerte', 'impayes']]],
+        'communication' => ['Communication', 'dashicons-megaphone', 6, [['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport', 'pub_echec'], ['Annonces', 'gv-annonces', 'gv_espaces_voir', 'gvb_page_annonces', 'journal', null], ['Notifications', 'gv-notifs', 'gv_espaces_voir', 'gvb_page_notifs', 'alerte', 'notifs_echec'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs', null], ['Espaces en ligne', 'gv-espaces', 'gv_espaces_voir', 'gvb_page_espaces', 'utilisateurs', 'invitations'], ['Candidatures (CV)', 'edit.php?post_type=candidature', 'edit_candidatures', '', 'cv', null]]],
+        'admin' => ['Administration', 'dashicons-admin-generic', 7, [['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage', null], ['Utilisateurs', 'users.php', 'list_users', '', 'utilisateurs', null]]],
+    ];
+}
+function gvb_pastille($n) { return $n > 0 ? ' <span class="update-plugins count-' . (int) $n . '"><span class="plugin-count">' . (int) $n . '</span></span>' : ''; }
+// Éléments de menu accessibles à un utilisateur, section par section
+function gvb_menu_visible($user) {
+    $out = [];
+    foreach (gvb_menu_sections() as $cle => [$titre, , , $items]) {
+        $ok = array_values(array_filter($items, fn($i) => user_can($user, $i[2])));
+        while ($ok && in_array($ok[0][1], GVB_EXTERNES, true)) array_shift($ok);
+        if ($ok) $out[$cle] = ['titre' => $titre, 'items' => $ok];
+    }
+    return $out;
+}
+function gvb_compteur_menu($cle, $taches) {
+    if (!$cle) return 0;
+    if ($cle === 'admissions') return (int) (($taches['nouvelles'][1] ?? 0) + ($taches['incompletes'][1] ?? 0));
+    return (int) ($taches[$cle][1] ?? 0);
+}
 add_action('admin_menu', function () {
-    add_menu_page('GROUPE VITOS', 'GROUPE VITOS', 'gv_acces', 'gv', 'gvb_page_tableau', 'dashicons-welcome-learn-more', 2);
-    foreach ([
-        ['Tableau de bord', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau'], ['Pilotage', 'gv-pilotage', 'gv_pilotage_voir', 'gvb_page_pilotage', 'rapport'], ['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission'],
-        ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs'], ['Étudiants', 'gv-etudiants', 'gv_etudiants_voir', 'gvb_page_etudiants', 'pole'], ['Programmes', 'gv-programmes', 'gv_pedagogie_voir', 'gvb_page_programmes', 'liste'], ['Enseignants', 'gv-enseignants', 'gv_pedagogie_voir', 'gvb_page_enseignants', 'cv'], ['Charges horaires', 'gv-charges', 'gv_pedagogie_voir', 'gvb_page_charges', 'horloge'], ['Emploi du temps', 'gv-planning', 'gv_planning_voir', 'gvb_page_planning', 'horloge'], ['Salles', 'gv-salles', 'gv_planning_voir', 'gvb_page_salles', 'inscription'], ['Absences', 'gv-absences', 'gv_planning_voir', 'gvb_page_absences', 'alerte'], ['Espaces en ligne', 'gv-espaces', 'gv_espaces_voir', 'gvb_page_espaces', 'utilisateurs'], ['Annonces', 'gv-annonces', 'gv_espaces_voir', 'gvb_page_annonces', 'rapport'], ['Notifications', 'gv-notifs', 'gv_espaces_voir', 'gvb_page_notifs', 'alerte'], ['Finances', 'gv-finances', 'gv_finances_voir', 'gvb_page_finances', 'carte'], ['Impayés', 'gv-impayes', 'gv_finances_voir', 'gvb_page_impayes', 'alerte'], ['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport'], ['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage'],
-    ] as [$titre, $slug, $cap, $cb, $icone]) add_submenu_page('gv', $titre, '<span class="gvb-mi">' . gvb_icone($icone, 16) . '</span>' . esc_html($titre), $cap, $slug, $cb);
-    add_submenu_page('gv', 'Candidatures (CV)', '<span class="gvb-mi">' . gvb_icone('cv', 16) . '</span>Candidatures (CV)', 'edit_candidatures', 'edit.php?post_type=candidature');
-    add_submenu_page('gv', 'Utilisateurs', '<span class="gvb-mi">' . gvb_icone('utilisateurs', 16) . '</span>Utilisateurs', 'list_users', 'users.php');
+    $GLOBALS['gvb_parents'] = [];
+    if (!current_user_can('gv_acces')) return;
+    $taches = function_exists('gvb_taches') ? gvb_taches() : [];
+    foreach (gvb_menu_sections() as $cle => [$titre, $icone, $pos]) {
+        $section = gvb_menu_visible(wp_get_current_user())[$cle] ?? null;
+        if (!$section) continue;
+        $items = $section['items']; $parent = $items[0][1]; $GLOBALS['gvb_parents'][$cle] = $parent;
+        $total = 0; foreach ($items as $i) $total += gvb_compteur_menu($i[5], $taches);
+        add_menu_page($titre, $titre . gvb_pastille($total), 'gv_acces', $parent, $items[0][3], $icone, $pos);
+        foreach ($items as $i) add_submenu_page($parent, $i[0], '<span class="gvb-mi">' . gvb_icone($i[4], 16) . '</span>' . esc_html($i[0]) . gvb_pastille(gvb_compteur_menu($i[5], $taches)), $i[2], $i[1], $i[3]);
+    }
     foreach (GVB_PAGES_CACHEES as $slug => [$titre, $cap, $cb]) add_submenu_page('gv', $titre, $titre, $cap, $slug, $cb);
 });
 add_action('admin_menu', function () {
     global $submenu;
     foreach ($submenu['gv'] ?? [] as $i => $item) if (isset(GVB_PAGES_CACHEES[$item[2]])) $submenu['gv'][$i][4] = 'gvb-cache';
 }, 9999);
+// Un écran de détail garde sa section et son entrée de menu actives
+add_filter('parent_file', function ($pf) {
+    $carte = ['gv-demande' => ['scolarite', 'gv-admissions'], 'gv-inscription' => ['scolarite', 'gv-inscriptions'], 'gv-etudiant' => ['scolarite', 'gv-etudiants'], 'gv-seance' => ['pedagogie', 'gv-planning'], 'gv-enseignant' => ['pedagogie', 'gv-enseignants'], 'gv-compte' => ['finances', 'gv-finances'], 'gv-recu' => ['finances', 'gv-finances']];
+    $p = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
+    if (isset($carte[$p]) && !empty($GLOBALS['gvb_parents'][$carte[$p][0]])) { $GLOBALS['gvb_sous_menu'] = $carte[$p][1]; return $GLOBALS['gvb_parents'][$carte[$p][0]]; }
+    return $pf;
+});
+add_filter('submenu_file', fn($sf) => $GLOBALS['gvb_sous_menu'] ?? $sf);
 // Les équipes métier ne voient aucun écran WordPress
 add_action('admin_menu', function () {
     if (current_user_can('manage_options')) return;
     global $menu;
-    $permis = ['gv', 'profile.php', 'edit.php?post_type=candidature'];
-    if (gvb_est_communication(get_current_user_id())) $permis = ['gv', 'profile.php', 'edit.php', 'upload.php'];
+    $permis = array_merge(array_values($GLOBALS['gvb_parents'] ?? []), ['gv', 'profile.php']);
+    if (gvb_est_communication(get_current_user_id())) $permis = array_merge($permis, ['edit.php', 'upload.php']);
     foreach ($menu as $item) if (!empty($item[2]) && !in_array($item[2], $permis, true) && !str_starts_with((string) ($item[4] ?? ''), 'wp-menu-separator')) remove_menu_page($item[2]);
     foreach ($menu as $i => $item) if (($item[2] ?? '') === 'edit.php') $menu[$i][0] = 'Actualités';
     foreach ($menu as $i => $item) if (($item[2] ?? '') === 'upload.php') $menu[$i][0] = 'Médias';
@@ -636,7 +676,7 @@ add_action('admin_head', function () {
 #adminmenuback,#adminmenuwrap,#adminmenu{background:#08065B}#adminmenu a{color:#E1E7FA}#adminmenu li.menu-top:hover,#adminmenu li.opensub>a.menu-top{background:#1B1A7A;color:#fff}
 #adminmenu .wp-has-current-submenu .wp-submenu,#adminmenu .wp-submenu{background:#1B1A7A}#adminmenu .wp-submenu li.current a{box-shadow:inset 4px 0 0 #FFC23D}#adminmenu .gvb-mi svg{color:#FFC23D}#adminmenu li.current a.menu-top,#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,#adminmenu .wp-submenu li.current a{background:#1F4FFF;color:#fff;font-weight:600}
 #adminmenu .wp-submenu a{color:#C9D3F5}#adminmenu .wp-submenu a:hover{color:#fff;background:#2A2995}#adminmenu li.gvb-cache,#adminmenu li:has(> a[href$="page=gv-demande"]),#adminmenu li:has(> a[href$="page=gv-inscription"]){display:none}
-#adminmenu .gvb-mi{display:inline-flex;vertical-align:-3px;margin-right:8px}#wpadminbar{background:#08065B}#wpadminbar .ab-item,#wpadminbar a.ab-item{color:#E1E7FA}#adminmenu #menu-posts::before{content:"Actualités du site";display:block;padding:14px 12px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9FB0EA}
+#adminmenu .gvb-mi{display:inline-flex;vertical-align:-3px;margin-right:8px}#adminmenu .update-plugins{background:#FFC23D;color:#08065B;font-weight:700}#wpadminbar{background:#08065B}#wpadminbar .ab-item,#wpadminbar a.ab-item{color:#E1E7FA}#adminmenu #menu-posts::before{content:"Actualités du site";display:block;padding:14px 12px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9FB0EA}
 .gvb{max-width:1280px;--ink:#08065B;--blue:#1F4FFF;--vert:#007A2E;--ligne:#D6DCEB;--fond:#F2F4F9;--muted:#4A5578;color:#111827}
 .gvb-entete{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 14px}.gvb-entete h1{display:flex;align-items:center;gap:10px;margin:0;padding:0;font-size:26px;color:var(--ink);font-weight:800}
 .gvb-titre-icone{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--ink);color:#FFC23D;box-shadow:0 3px 0 #FFC23D}.gvb-entete-actions{display:flex;flex-wrap:wrap;gap:8px}

@@ -1,0 +1,104 @@
+<?php
+// Recette : accueil par profil, blocs personnalisables, menu en sections avec compteurs (WordPress Playground).
+define('GVB_ESSAI', true);
+$lignes = []; $ok = 0; $ko = 0;
+$t = function ($nom, $cond, $detail = '') use (&$lignes, &$ok, &$ko) { $cond ? $ok++ : $ko++; $lignes[] = ($cond ? '  ok  ' : ' ECHEC ') . $nom . (!$cond && $detail !== '' ? ' — ' . substr($detail, 0, 500) : ''); };
+register_shutdown_function(function () { $e = error_get_last(); if ($e && in_array($e['type'], [E_ERROR, E_PARSE], true)) file_put_contents('/wordpress/wp-content/out/fatal.txt', print_r($e, true)); });
+require '/wordpress/wp-load.php';
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
+do_action('init');
+global $wpdb;
+$an = gvb_reglages()['annee']; $now = gvb_now(); $hier = gmdate('Y-m-d', time() - 86400); $jours = fn($n) => gmdate('Y-m-d H:i:s', time() - $n * 86400);
+add_filter('wp_die_handler', fn() => function ($m) { throw new Exception('DIE:' . (is_wp_error($m) ? $m->get_error_message() : (string) $m)); });
+add_filter('wp_redirect', function ($loc) { throw new Exception('REDIR:' . $loc); });
+gvb_synchroniser_roles();
+$envoyer = function ($action, $nonce, array $post) { $_POST = $post + ['_wpnonce' => wp_create_nonce($nonce)]; $_REQUEST = $_POST; try { do_action('admin_post_' . $action); return 'rien'; } catch (Throwable $e) { return urldecode($e->getMessage()); } };
+$mk = function ($l, $r, $pole = '') { $id = wp_insert_user(['user_login' => $l, 'user_pass' => wp_generate_password(), 'role' => $r, 'user_email' => "$l@exemple.test", 'display_name' => ucfirst($l)]); if ($pole) update_user_meta($id, 'gv_pole', $pole); return $id; };
+$dir = $mk('direction', 'gv_direction'); $sco = $mk('scolarite', 'gv_scolarite'); $cpt = $mk('compta', 'gv_comptabilite'); $rpU = $mk('respuni', 'gv_responsable_pole', 'universite'); $rpL = $mk('resplyc', 'gv_responsable_pole', 'lycee'); $com = $mk('comm', 'gv_communication'); $adm = $mk('chef', 'administrator'); $nul = $mk('subscriber', 'subscriber');
+$page = function ($uid) { wp_set_current_user($uid); $_GET = []; ob_start(); try { gvb_page_tableau(); } catch (Exception $e) { ob_end_clean(); return $e->getMessage(); } return ob_get_clean(); };
+
+$lignes[] = '## Profils';
+$t('profil de chaque utilisateur', gvb_profil_utilisateur(get_userdata($dir)) === 'gv_direction' && gvb_profil_utilisateur(get_userdata($sco)) === 'gv_scolarite' && gvb_profil_utilisateur(get_userdata($com)) === 'gv_communication' && gvb_profil_utilisateur(get_userdata($rpL)) === 'gv_responsable_pole');
+$t('l’administrateur WordPress est traité comme la Direction', gvb_profil_utilisateur(get_userdata($adm)) === 'gv_direction' && str_contains(gvb_profil_libelle(get_userdata($adm)), 'administrateur'));
+$t('un utilisateur sans profil métier : aucun profil', gvb_profil_utilisateur(get_userdata($nul)) === '');
+$t('accueils par défaut : un jeu de blocs différent par profil', gvb_accueil_config('gv_direction') !== gvb_accueil_config('gv_comptabilite') && in_array('finances_jour', gvb_accueil_config('gv_comptabilite'), true) && !in_array('admissions', gvb_accueil_config('gv_comptabilite'), true) && in_array('communication', gvb_accueil_config('gv_communication'), true));
+
+// Données de test
+$dem = function ($nom, $niveau, $pole, $statut, $age) use ($wpdb, $an) { $id = gvb_creer_demande(['pole' => $pole, 'annee' => $an, 'niveau' => $niveau, 'formation_id' => 0, 'serie' => '', 'nom' => $nom, 'prenom' => 'X', 'naissance' => '2006-03-14', 'sexe' => 'F', 'nationalite' => '', 'telephone' => '+223 70 00 00 0' . rand(0, 9), 'email' => '', 'adresse' => '', 'parent_nom' => '', 'parent_telephone' => '', 'parent_email' => '', 'provenance' => '', 'message' => ''], 'agence'); $wpdb->update(gvb_table('demandes'), ['statut' => $statut, 'cree_le' => gmdate('Y-m-d H:i:s', time() - $age * 86400)], ['id' => $id]); return $id; };
+wp_set_current_user($dir);
+$dem('Nouvelle1', 'Licence 1', 'universite', 'nouvelle', 1); $dem('Nouvelle2', 'Licence 1', 'universite', 'nouvelle', 12); $dem('Incomplete', 'Licence 1', 'universite', 'incomplete', 3); $dem('LyceeNouvelle', '10e année', 'lycee', 'nouvelle', 2);
+$dA = $dem('Acceptee', 'Licence 1', 'universite', 'acceptee', 5);
+$dI = $dem('Inscrite', 'Licence 1', 'universite', 'acceptee', 5); $wpdb->update(gvb_table('pieces'), ['recue' => 1], ['demande_id' => $dI]); gvb_inscrire($dI, 50000, 400000, ''); $eI = (int) $wpdb->get_var('SELECT id FROM ' . gvb_table('etudiants') . " WHERE demande_id = $dI");
+$wpdb->query("UPDATE " . gvb_table('charges') . " SET echeance = '" . gmdate('Y-m-d', time() - 40 * 86400) . "' WHERE etudiant_id = $eI AND libelle LIKE 'Frais d%'");
+$wpdb->insert(gvb_table('cours'), ['pole' => 'universite', 'formation_id' => 0, 'niveau' => 'Licence 1', 'intitule' => 'Gestion de projet', 'volume' => 40, 'cree_le' => $now]); $c1 = (int) $wpdb->insert_id;
+$wpdb->insert(gvb_table('enseignants'), ['nom' => 'Kouyaté', 'prenom' => 'I', 'email' => 'i@exemple.test', 'cree_le' => $now, 'modifie_le' => $now]); $en = (int) $wpdb->insert_id;
+$wpdb->insert(gvb_table('seances'), ['cours_id' => $c1, 'enseignant_id' => $en, 'salle_id' => 0, 'annee' => $an, 'pole' => 'universite', 'niveau' => 'Licence 1', 'date_seance' => $hier, 'debut' => '08:00:00', 'fin' => '10:00:00', 'statut' => 'planifiee', 'cree_le' => $now]);
+$wpdb->insert(gvb_table('seances'), ['cours_id' => $c1, 'enseignant_id' => $en, 'salle_id' => 0, 'annee' => $an, 'pole' => 'universite', 'niveau' => 'Licence 1', 'date_seance' => gvb_aujourdhui(), 'debut' => '14:00:00', 'fin' => '16:00:00', 'statut' => 'planifiee', 'cree_le' => $now]);
+$wpdb->insert(gvb_table('notifs'), ['cle' => 'k1', 'email' => 'a@exemple.test', 'statut' => 'echec', 'cree_le' => $now]);
+
+$lignes[] = "\n## Tâches « à traiter »";
+wp_set_current_user($dir); $tc = gvb_taches();
+$t('Direction : nouvelles demandes (3), en attente > 7 j (1), incomplètes (1), acceptées à inscrire (1)', $tc['nouvelles'][1] === 3 && $tc['attente'][1] === 1 && $tc['incompletes'][1] === 1 && $tc['a_inscrire'][1] === 1, json_encode(array_map(fn($x) => $x[1], $tc)));
+$t('Direction : séance sans appel (1), cours non couvert (1), impayé (1), notification en échec (1)', $tc['sans_appel'][1] === 1 && $tc['non_couverts'][1] === 1 && $tc['impayes'][1] === 1 && $tc['notifs_echec'][1] === 1, json_encode(array_map(fn($x) => $x[1], $tc)));
+wp_set_current_user($rpL); $tl = gvb_taches(); $t('Responsable du Lycée : seulement les demandes de son pôle (1), rien pour l’Université', $tl['nouvelles'][1] === 1 && $tl['attente'][1] === 0 && $tl['sans_appel'][1] === 0 && !isset($tl['notifs_echec']) && !isset($tl['invitations']), json_encode(array_map(fn($x) => $x[1], $tl)));
+wp_set_current_user($cpt); $tcp = gvb_taches(); $t('Comptabilité : tâches financières seulement (pas d’admissions ni de séances)', isset($tcp['impayes']) && !isset($tcp['nouvelles']) && !isset($tcp['sans_appel']) && !isset($tcp['notifs_echec']), json_encode(array_keys($tcp)));
+wp_set_current_user($com); $tcm = gvb_taches(); $t('Communication : tâches de publication seulement', array_keys($tcm) === ['pub_echec'], json_encode(array_keys($tcm)));
+wp_set_current_user($sco); $ts = gvb_taches(); $t('Scolarité : admissions, séances et cours ; pas d’impayés', isset($ts['nouvelles']) && isset($ts['sans_appel']) && !isset($ts['impayes']), json_encode(array_keys($ts)));
+
+$lignes[] = "\n## Pages d'accueil par profil";
+$h = $page($dir); $t('Direction : salutation, profil, indicateurs clés, à traiter, finances', str_contains($h, 'Bonjour Direction') && str_contains($h, 'Indicateurs clés') && str_contains($h, 'À traiter') && str_contains($h, 'Encaissé aujourd’hui') && str_contains($h, 'Étudiants actifs') && str_contains($h, 'Contacts plaquette'), strip_tags(substr($h, 0, 600)));
+$h = $page($sco); $t('Scolarité : admissions, séances du jour et raccourcis', str_contains($h, 'Nouvelles demandes') && str_contains($h, 'Aujourd’hui en classe') && str_contains($h, 'Nouvelle demande d’admission') && !str_contains($h, 'Encaissé aujourd’hui') && str_contains($h, 'Scolarité'));
+$h = $page($cpt); $t('Comptabilité : encaissements et impayés, pas d’admissions', str_contains($h, 'Encaissé aujourd’hui') && str_contains($h, 'Échéances (7 jours)') && str_contains($h, 'Enregistrer un paiement') && !str_contains($h, 'Nouvelles demandes'));
+$h = $page($rpU); $t('Responsable de l’Université : son pôle affiché, séances de son pôle', str_contains($h, 'pôle Université') && str_contains($h, 'Gestion de projet'));
+$h = $page($rpL); $t('Responsable du Lycée : ne voit pas les séances de l’Université', str_contains($h, 'pôle Lycée') && !str_contains($h, 'Gestion de projet') && str_contains($h, 'Aucune séance aujourd’hui'));
+$h = $page($com); $t('Communication : publications, annonces, raccourcis, aucune donnée scolaire', str_contains($h, 'Publications programmées') && str_contains($h, 'Nouvelle publication Facebook') && str_contains($h, 'Dernières annonces') && !str_contains($h, 'Nouvelles demandes') && !str_contains($h, 'Étudiants actifs'));
+$h = $page($nul); $t('utilisateur sans profil : accès refusé (pas de droit gv_acces)', str_starts_with($h, 'DIE:'));
+
+$lignes[] = "\n## Personnalisation par la Direction";
+wp_set_current_user($dir);
+$r = $envoyer('gvb_accueil_sauver', 'gvb_accueil_sauver', ['profil' => 'gv_scolarite', 'blocs' => ['recentes' => '1', 'taches' => '1', 'pilotage_resume' => '1', 'inexistant' => '1'], 'ordre' => ['recentes' => '1', 'taches' => '2', 'pilotage_resume' => '3', 'inexistant' => '4']]);
+$cfg = gvb_accueil_config('gv_scolarite');
+$t('accueil de la Scolarité personnalisé : blocs choisis, dans l’ordre', $cfg === ['recentes', 'taches'], json_encode($cfg));
+$t('un bloc dont le profil n’a pas le droit (pilotage) est refusé, un bloc inexistant ignoré', !in_array('pilotage_resume', $cfg, true) && !in_array('inexistant', $cfg, true) && $cfg === ['recentes', 'taches'], json_encode($cfg));
+$h = $page($sco); $t('la page de la Scolarité suit la configuration', strpos($h, 'Dernières demandes') !== false && strpos($h, 'Dernières demandes') < strpos($h, 'À traiter') && !str_contains($h, 'Aujourd’hui en classe'));
+wp_set_current_user($dir); $envoyer('gvb_accueil_sauver', 'gvb_accueil_sauver', ['profil' => 'gv_comptabilite', 'blocs' => ['espaces' => '1', 'finances_jour' => '1'], 'ordre' => ['espaces' => '1', 'finances_jour' => '2']]);
+$t('Comptabilité : le bloc « Espaces en ligne » (droit absent) n’est pas retenu', gvb_accueil_config('gv_comptabilite') === ['finances_jour'], json_encode(gvb_accueil_config('gv_comptabilite')));
+update_option('gvb_accueil', ['gv_comptabilite' => ['espaces', 'admissions_inexistant', 'finances_jour']], false);
+$h = $page($cpt); $t('défense en profondeur : même configurée de force, un bloc non autorisé ne s’affiche pas', !str_contains($h, 'Comptes actifs') && str_contains($h, 'Encaissé aujourd’hui'));
+wp_set_current_user($sco); $r = $envoyer('gvb_accueil_sauver', 'gvb_accueil_sauver', ['profil' => 'gv_direction', 'blocs' => ['taches' => '1'], 'ordre' => ['taches' => '1']]); $t('la Scolarité ne peut pas modifier les accueils', str_starts_with($r, 'DIE:') && gvb_accueil_config('gv_direction') !== ['taches']);
+wp_set_current_user($dir); $r = $envoyer('gvb_accueil_sauver', 'gvb_accueil_sauver', ['profil' => 'inconnu', 'blocs' => []]); $t('profil inconnu refusé', str_contains($r, 'inconnu'));
+$envoyer('gvb_accueil_defaut', 'gvb_accueil_defaut', ['profil' => 'gv_scolarite']); $t('rétablissement des valeurs par défaut', gvb_accueil_config('gv_scolarite') === gvb_accueil_defauts('gv_scolarite'));
+$envoyer('gvb_accueil_sauver', 'gvb_accueil_sauver', ['profil' => 'gv_scolarite', 'blocs' => [], 'ordre' => []]); $h = $page($sco); $t('accueil vide : message explicite', str_contains($h, 'Aucun bloc n’est configuré'));
+$envoyer('gvb_accueil_defaut', 'gvb_accueil_defaut', ['profil' => 'gv_scolarite']); delete_option('gvb_accueil');
+wp_set_current_user($dir); $_GET = []; ob_start(); gvb_page_reglages(); $h = ob_get_clean(); $t('écran Réglages : section « Accueil par profil » avec les 5 profils', str_contains($h, 'Accueil par profil') && str_contains($h, 'Chargé de communication') && str_contains($h, 'Rétablir l’accueil par défaut') && str_contains($h, 'droit non attribué'));
+
+$lignes[] = "\n## Menu en sections";
+$noms = fn($uid) => array_map(fn($s) => $s['titre'], gvb_menu_visible(get_userdata($uid)));
+$items = fn($uid, $cle) => array_map(fn($i) => $i[0], gvb_menu_visible(get_userdata($uid))[$cle]['items'] ?? []);
+$t('Direction : les 6 sections', array_keys(gvb_menu_visible(get_userdata($dir))) === ['accueil', 'scolarite', 'pedagogie', 'finances', 'communication', 'admin']);
+$t('Direction : Administration = Réglages et Utilisateurs ; Communication inclut les CV', $items($dir, 'admin') === ['Réglages', 'Utilisateurs'] && in_array('Candidatures (CV)', $items($dir, 'communication'), true));
+$t('Comptabilité : Accueil, Scolarité, Pédagogie, Finances ; ni Communication ni Administration', array_keys(gvb_menu_visible(get_userdata($cpt))) === ['accueil', 'scolarite', 'pedagogie', 'finances']);
+$t('Comptabilité : le Pilotage est accessible en consultation', in_array('Pilotage', $items($cpt, 'accueil'), true));
+$t('Communication : Accueil et Communication seulement', array_keys(gvb_menu_visible(get_userdata($com))) === ['accueil', 'communication'] && $items($com, 'accueil') === ['Accueil'] && $items($com, 'communication') === ['Publications', 'Annonces', 'Notifications', 'Contacts', 'Espaces en ligne']);
+$t('Scolarité : sections métier, pas d’Administration, ni Pilotage', !isset(gvb_menu_visible(get_userdata($sco))['admin']) && !in_array('Pilotage', $items($sco, 'accueil'), true) && isset(gvb_menu_visible(get_userdata($sco))['scolarite']));
+$t('Responsable de pôle : Pilotage visible, pas d’Administration', in_array('Pilotage', $items($rpU, 'accueil'), true) && !isset(gvb_menu_visible(get_userdata($rpU))['admin']));
+$t('une section n’est jamais ouverte par un élément externe (Utilisateurs, CV)', (function () use ($dir, $cpt) { foreach ([$dir, $cpt] as $u) foreach (gvb_menu_visible(get_userdata($u)) as $s) if (in_array($s['items'][0][1], GVB_EXTERNES, true)) return false; return true; })());
+$t('utilisateur sans profil : aucune section', gvb_menu_visible(get_userdata($nul)) === []);
+
+$lignes[] = "\n## Compteurs et enregistrement du menu";
+wp_set_current_user($dir); $tc = gvb_taches();
+$t('compteurs : Admissions (3 nouvelles + 1 incomplète = 4), Inscriptions (1), Impayés (1)', gvb_compteur_menu('admissions', $tc) === 4 && gvb_compteur_menu('a_inscrire', $tc) === 1 && gvb_compteur_menu('impayes', $tc) === 1 && gvb_compteur_menu(null, $tc) === 0);
+$t('pastille : absente à zéro, présente sinon', gvb_pastille(0) === '' && str_contains(gvb_pastille(4), 'count-4') && str_contains(gvb_pastille(4), '>4<'));
+global $menu, $submenu, $_wp_submenu_nopriv, $_registered_pages, $_parent_pages; $menu = []; $submenu = []; $_wp_submenu_nopriv = []; $_registered_pages = []; $_parent_pages = [];
+do_action('admin_menu');
+$sl = array_map(fn($m) => $m[2], array_filter($menu, fn($m) => !empty($m[2])));
+$t('menus enregistrés : 6 sections de premier niveau', in_array('gv', $sl, true) && in_array('gv-admissions', $sl, true) && in_array('gv-programmes', $sl, true) && in_array('gv-finances', $sl, true) && in_array('gv-publications', $sl, true) && in_array('gv-reglages', $sl, true), json_encode($sl));
+$titres = array_map(fn($m) => wp_strip_all_tags($m[0]), array_filter($menu, fn($m) => !empty($m[2]) && str_starts_with($m[2], 'gv')));
+$t('la section Scolarité affiche la pastille des demandes à traiter', (function () use ($menu) { foreach ($menu as $m) if (($m[2] ?? '') === 'gv-admissions') return str_contains($m[0], 'count-5'); return false; })(), json_encode(array_values($titres)));
+$t('écrans de détail rangés sous « Accueil » mais masqués', isset($submenu['gv']) && count(array_filter($submenu['gv'], fn($i) => ($i[4] ?? '') === 'gvb-cache')) === count(GVB_PAGES_CACHEES));
+$_GET = ['page' => 'gv-etudiant']; $GLOBALS['gvb_sous_menu'] = null; $pf = apply_filters('parent_file', 'gv'); $t('écran de détail : la section Scolarité reste active, entrée « Étudiants » surlignée', $pf === ($GLOBALS['gvb_parents']['scolarite'] ?? '?') && apply_filters('submenu_file', 'x') === 'gv-etudiants', $pf);
+$_GET = ['page' => 'gv-admissions']; $GLOBALS['gvb_sous_menu'] = null; $t('écran normal : navigation inchangée', apply_filters('parent_file', 'gv-admissions') === 'gv-admissions');
+wp_set_current_user($com); $menu = []; $submenu = []; do_action('admin_menu'); $sl = array_map(fn($m) => $m[2], array_filter($menu, fn($m) => !empty($m[2])));
+$t('Communication : sections Accueil et Communication, pas d’admissions ni de finances', in_array('gv', $sl, true) && in_array('gv-publications', $sl, true) && !in_array('gv-admissions', $sl, true) && !in_array('gv-finances', $sl, true) && !in_array('gv-reglages', $sl, true), json_encode($sl));
+
+file_put_contents('/wordpress/wp-content/out/resultat.txt', implode("\n", $lignes) . "\n\n=== $ok réussis, $ko échecs ===\n");
