@@ -35,6 +35,19 @@ const phone = phones[0] && { href: telHref(phones[0].meta.valeur), text: phones[
 const email = ofType(coordonnees, 'email')[0]?.meta.valeur;
 const socials = ofType(coordonnees, 'reseau');
 const current = (path: string) => (path === '/' ? Astro.url.pathname === '/' : Astro.url.pathname.startsWith(path)) ? 'page' : undefined;
+const address = ofType(coordonnees, 'adresse')[0]?.meta.valeur ?? identite.adresse;
+const footerPoles = nav.filter(item => ['/universite/', '/lycee/', '/itp/'].includes(item.path));
+const footerGroupe = [
+  ...nav.filter(item => ['/a-propos/', '/galeries/'].includes(item.path)),
+  ...(page('partenaires') ? [{ path: pathOf(page('partenaires')!), label: 'Partenaires' }] : []),
+  ...(page('enseignants') ? [{ path: pathOf(page('enseignants')!), label: 'Enseignants' }] : []),
+  ...nav.filter(item => item.path === '/contacts/'),
+];
+const footerDemarches = [
+  ...nav.filter(item => item.path === '/admission/'),
+  { path: '/#plaquette', label: 'Recevoir la plaquette' },
+  { path: 'https://admin.groupevitos.com/espace/', label: 'Espace parents, étudiants, enseignants' },
+];
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
 ---
@@ -84,16 +97,32 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
         <div class="footer__brand">
           <img class="brand__logo" src="/symbole-ivs.svg" width="46" height="33" alt="" />
           <strong set:html={site.name} />
-          <p>{identite.devise}</p>
+          <p class="footer__devise">{identite.devise}</p>
+          {address && <p class="footer__address"><Icon name="pin" size={18} /><span>{address}</span></p>}
+          {socials.length > 0 && <ul class="footer__socials" aria-label="Réseaux sociaux">{socials.map(c => <li><a href={c.meta.valeur} rel="noopener" target="_blank">{c.meta.usage}</a></li>)}</ul>}
         </div>
-        <ul class="footer__links">{[...nav, ...(page('partenaires') ? [{ path: pathOf(page('partenaires')!), label: 'Partenaires' }] : []), ...(page('enseignants') ? [{ path: pathOf(page('enseignants')!), label: 'Enseignants' }] : []), { path: '/#plaquette', label: 'Recevoir la plaquette' }, { path: 'https://admin.groupevitos.com/espace/', label: 'Espace parents, étudiants, enseignants' }].map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
-        <ul class="footer__links">
-          {phones.slice(0, 4).map(c => <li><a href={telHref(c.meta.valeur)}>{c.meta.usage} : {c.meta.valeur}</a></li>)}
-          {email && <li><a href={`mailto:${email}`}>{email}</a></li>}
-          {socials.map(c => <li><a href={c.meta.valeur} rel="noopener" target="_blank">{c.meta.usage}</a></li>)}
-        </ul>
+        <nav class="footer__col" aria-label="Nos établissements">
+          <h2 class="footer__title">Nos établissements</h2>
+          <ul class="footer__links">{footerPoles.map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
+          <h2 class="footer__title footer__title--next">Le Groupe</h2>
+          <ul class="footer__links">{footerGroupe.map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
+        </nav>
+        <nav class="footer__col" aria-label="Démarches">
+          <h2 class="footer__title">Démarches</h2>
+          <ul class="footer__links">{footerDemarches.map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
+          <a class="btn btn--mango btn--small footer__cta" href={signup ? pathOf(signup) : '/admission/'}>Demande d’admission</a>
+        </nav>
+        <div class="footer__col">
+          <h2 class="footer__title">Nous contacter</h2>
+          <ul class="footer__contacts">
+            {phones.slice(0, 4).map(c => <li><Icon name="phone" size={18} /><a href={telHref(c.meta.valeur)}><small>{c.meta.usage}</small><span>{c.meta.valeur}</span></a></li>)}
+            {email && <li><Icon name="mail" size={18} /><a href={`mailto:${email}`}><small>E-mail</small><span>{email}</span></a></li>}
+          </ul>
+        </div>
       </div>
-      <p class="wrap footer__legal">{institut.agrement} · © {new Date().getFullYear()} <span set:html={site.name} /> · <a class="footer__admin" href="https://admin.groupevitos.com/" rel="nofollow noopener">Espace de gestion</a></p>
+      <div class="footer__bar">
+        <p class="wrap footer__legal"><span>{institut.agrement}</span><span>© {new Date().getFullYear()} <span set:html={site.name} /></span><a class="footer__admin" href="https://admin.groupevitos.com/" rel="nofollow noopener">Espace de gestion</a></p>
+      </div>
     </footer>
 
     {cta ? (

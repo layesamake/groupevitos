@@ -46,6 +46,16 @@ const contactPage = pageBySlug(pages, 'contacts');
 const route = contactPage?.content.rendered.match(/<p[^>]*>[^<]*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/)?.[1];
 const map = contactPage?.content.rendered.match(/<iframe[^>]*src="([^"]+)"/)?.[1];
 const pieces = (block?: { dossier?: { meta: { pieces: string } } }) => listItems(block?.dossier?.meta.pieces ?? '').map(item => item.text);
+// Page « Le Groupe » : le texte saisi dans WordPress est découpé par intertitres pour être mis en forme par blocs
+const about = slug === 'a-propos' ? (() => {
+  const body = html.replace(/<p[^>]*>\s*<strong>([^<]+)<\/strong>\s*<\/p>\s*$/, '');
+  const tagline = plain(html.match(/<p[^>]*>\s*<strong>([^<]+)<\/strong>\s*<\/p>\s*$/)?.[1] ?? '');
+  const intro = body.split(/<h3/)[0];
+  const blocks = [...body.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>([\s\S]*?)(?=<h3|$)/g)].map(match => ({ title: plain(match[1]), html: match[2] }));
+  const find = (pattern: RegExp) => blocks.find(block => pattern.test(block.title));
+  return { intro, tagline, blocks, poles: find(/p[ôo]les/i), histoire: find(/tablissement|bamako/i), pratique: find(/formation|pratique/i), implantations: find(/implantation/i) };
+})() : null;
+const poleLink = (title: string) => /universit/i.test(title) ? '/universite/' : /lyc/i.test(title) ? '/lycee/' : /itp|technique/i.test(title) ? '/itp/' : '';
 const reperes = identityLines(identite.reperes).map(line => { const [year, ...text] = line.split('|'); return { year: year.trim(), text: text.join('|').trim() }; });
 ---
 <Base title={page.title.rendered} description={plain(page.excerpt.rendered) || plain(page.content.rendered).slice(0, 160)} image={hero?.src}>
@@ -161,7 +171,87 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
         {map && <iframe class="map" src={map} title="Plan d’accès à l’Institut VITO S." loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>}
       </div>
     </section>
-  </> : slug === 'a-propos' ? <>
+  </> : slug === 'a-propos' ? (about && about.blocks.length >= 3 ? <>
+    <section class="section about-intro">
+      <div class="wrap about-intro__grid">
+        <div>
+          <Eyebrow number="01">Le Groupe</Eyebrow>
+          <div class="about-lead" set:html={about.intro.replace(/<h2[^>]*>[\s\S]*?<\/h2>/, '')} />
+          <p class="note">{identite.reconnaissance}</p>
+        </div>
+        <aside class="about-card">
+          <img class="logo-institut" src="/logo-institut-vitos.webp" width="460" height="117" alt="Institut VITO S. — établissement privé d’enseignement secondaire et supérieur agréé par l’État" />
+          <p class="motto">{identite.devise}</p>
+          <ul class="about-facts">
+            {reperes[0]?.year && <li><strong>{reperes[0].year}</strong><span>Création de l’Institut</span></li>}
+            {about.poles && <li><strong>{listItems(about.poles.html).length}</strong><span>pôles d’enseignement</span></li>}
+            <li><strong>Bamako</strong><span>Kalaban Coura, Mali</span></li>
+          </ul>
+        </aside>
+      </div>
+      <nav class="wrap about-nav" aria-label="Sur cette page">
+        {about.poles && <a href="#poles">Nos pôles</a>}
+        {about.histoire && <a href="#histoire">Notre histoire</a>}
+        {about.pratique && <a href="#pedagogie">Notre pédagogie</a>}
+        {reperes.length > 0 && <a href="#reperes">Repères</a>}
+        {about.implantations && <a href="#implantations">Implantations</a>}
+      </nav>
+    </section>
+
+    {about.poles && <section class="section section--white" id="poles">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow number="02">Trois pôles</Eyebrow><h2>{about.poles.title}</h2></div>
+        <ul class="about-poles">{listItems(about.poles.html).map(item => {
+          const href = poleLink(item.title);
+          return <li class="about-pole">
+            <Icon name="cap" size={26} />
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+            {href && <a href={href}>Découvrir <span aria-hidden="true">→</span></a>}
+          </li>;
+        })}</ul>
+      </div>
+    </section>}
+
+    {about.histoire && <section class="section" id="histoire">
+      <div class="wrap about-story">
+        <div class="section__head"><Eyebrow number="03">Notre histoire</Eyebrow><h2>{about.histoire.title}</h2></div>
+        <div class="about-story__text" set:html={about.histoire.html} />
+      </div>
+    </section>}
+
+    {about.pratique && <section class="section section--white" id="pedagogie">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow number="04">Notre pédagogie</Eyebrow><h2>{about.pratique.title}</h2></div>
+        <ul class="about-points">{listItems(about.pratique.html).map(item => <li><Icon name="check" size={22} /><span>{item.title ? <><strong>{item.title}</strong> — {item.text}</> : item.text}</span></li>)}</ul>
+      </div>
+    </section>}
+
+    {reperes.length > 0 && <section class="section" id="reperes">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow number="05">Repères</Eyebrow><h2>Notre parcours</h2></div>
+        <ol class="about-timeline">{reperes.map(r => <li>{r.year && <strong>{r.year}</strong>}<span>{r.text}</span></li>)}</ol>
+      </div>
+    </section>}
+
+    {about.implantations && <section class="section section--white" id="implantations">
+      <div class="wrap about-where">
+        <div class="section__head"><Eyebrow number="06">Où nous trouver</Eyebrow><h2>{about.implantations.title}</h2></div>
+        <div class="about-where__card"><Icon name="pin" size={26} /><div set:html={about.implantations.html} /></div>
+      </div>
+    </section>}
+
+    <section class="section section--night about-cta">
+      <div class="wrap">
+        {about.tagline && <p class="about-cta__tagline">{about.tagline}</p>}
+        <p class="about-cta__sign">{identityLines(identite.signatures).join(' · ')}</p>
+        <div class="about-cta__actions">
+          <a class="btn btn--mango" href="/admission/">Faire une demande d’admission</a>
+          <a class="btn btn--ghost" href="/contacts/">Nous contacter</a>
+        </div>
+      </div>
+    </section>
+  </> : <>
     <section class="section">
       <div class="wrap pole-block">
         <img class="logo-institut" src="/logo-institut-vitos.webp" width="460" height="117" alt="Institut VITO S. — établissement privé d’enseignement secondaire et supérieur agréé par l’État" />
@@ -172,7 +262,7 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
         <p>{identityLines(identite.signatures).join(' · ')}</p>
       </div>
     </section>
-  </> : (
+  </>) : (
     <section class="section">
       <div class="wrap"><article class="prose" set:html={html} /></div>
     </section>
