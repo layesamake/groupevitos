@@ -100,7 +100,7 @@ function gvb_page_etudiants() {
     gvb_exiger('etudiants', 'voir');
     $f = gvb_filtres_etudiants(); $lignes = [];
     foreach (gvb_requete_etudiants($f, 500) as $e) {
-        $lignes[] = '<tr><td><a href="' . esc_url(gvb_url('gv-etudiant', ['id' => $e->id])) . '"><strong>' . esc_html($e->matricule) . '</strong></a></td><td>' . esc_html(strtoupper($e->nom) . ' ' . $e->prenom) . '</td><td>' . esc_html(GVB_POLES[$e->pole] ?? '') . '</td><td>' . esc_html($e->niveau ?: '—') . '</td><td>' . esc_html($e->annee) . '</td><td>' . gvb_etu_badge($e->statut) . '</td><td>' . esc_html($e->telephone ?: ($e->parent_telephone ?: '—')) . '</td></tr>';
+        $lignes[] = '<tr><td><a href="' . esc_url(gvb_url('gv-etudiant', ['id' => $e->id])) . '"><strong>' . esc_html($e->matricule) . '</strong></a></td><td>' . esc_html(mb_strtoupper($e->nom) . ' ' . $e->prenom) . '</td><td>' . esc_html(GVB_POLES[$e->pole] ?? '') . '</td><td>' . esc_html($e->niveau ?: '—') . '</td><td>' . esc_html($e->annee) . '</td><td>' . gvb_etu_badge($e->statut) . '</td><td>' . esc_html($e->telephone ?: ($e->parent_telephone ?: '—')) . '</td></tr>';
     }
     $actions = gvb_can('etudiants', 'exporter') ? '<a class="button" href="' . esc_url(wp_nonce_url(add_query_arg(array_merge(['action' => 'gvb_export_etudiants'], array_filter($f)), admin_url('admin-post.php')), 'gvb_export_etudiants')) . '">Exporter (CSV)</a>' : '';
     gvb_debut('Étudiants et élèves', 'pole', $actions);
