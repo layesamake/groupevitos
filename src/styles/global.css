@@ -458,3 +458,24 @@ html.lb-open { overflow: hidden; }
 .cards.cards--row.is-dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; user-select: none; }
 .cards.cards--row:focus-visible { outline: 3px solid var(--cobalt); outline-offset: 4px; border-radius: 12px; }
 .carousel + .more-link, .more-link { margin-top: 1rem; }
+.filters__n { display: inline-block; min-width: 1.6em; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: rgba(4, 3, 64, .12); font-size: .75rem; line-height: 1.6; text-align: center; }
+.filters button[aria-pressed="true"] .filters__n { background: var(--mango); color: var(--night); }
+.mosaic__photo { position: relative; display: block; min-width: 0; padding: 0; border: 0; border-radius: 18px; overflow: hidden; background: var(--cobalt-soft); cursor: zoom-in; }
+.mosaic__photo img { transition: transform .6s cubic-bezier(.2, .7, .2, 1); }
+.mosaic__photo:focus-visible { outline: 3px solid var(--mango); outline-offset: 2px; }
+@media (hover: hover) {
+  .mosaic__photo:hover img { transform: scale(1.07); }
+  .mosaic__photo:hover .gallery__zoom { opacity: 1; transform: none; }
+  .mosaic__photo:hover::after { opacity: 1; }
+}
+.mosaic__photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(4, 3, 64, .55), rgba(4, 3, 64, 0) 55%); opacity: 0; transition: opacity .35s; pointer-events: none; }
+.mosaic__photo:focus-visible .gallery__zoom { opacity: 1; transform: none; }
+.lb__tools { display: flex; gap: 8px; }
+.lb__tools .lb__btn { width: 44px; height: 44px; }
+.lb__play .lb__i-pause, .lb.is-playing .lb__i-play { display: none; }
+.lb.is-playing .lb__i-pause { display: block; }
+.lb__status { min-height: 1.2em; margin: 0; font-size: .85rem; color: rgba(255, 255, 255, .75); }
+.lb__progress { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--mango); transform: scaleX(0); transform-origin: left; }
+.lb__progress.is-running { animation: lb-progress 4s linear forwards; }
+@keyframes lb-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .mosaic__photo img { transition: none; } .lb__progress.is-running { animation: none; transform: scaleX(1); opacity: .4; } }

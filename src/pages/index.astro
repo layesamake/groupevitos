@@ -4,6 +4,7 @@ import Eyebrow from '../components/Eyebrow.astro';
 import FormationCard from '../components/FormationCard.astro';
 import FamilyFilter from '../components/FamilyFilter.astro';
 import Picture from '../components/Picture.astro';
+import GalleryViewer from '../components/GalleryViewer.astro';
 import Icon from '../components/Icon.astro';
 import PlaquetteForm from '../components/PlaquetteForm.astro';
 import { familiesOf, getContent, pageBySlug, pathOf } from '../lib/wordpress';
@@ -179,10 +180,17 @@ const reperes = [
     <div class="wrap">
       {mosaic.length > 0 && <>
         <div class="section__head"><Eyebrow number="05">Vie étudiante</Eyebrow><h2>La vie à VITO S.</h2></div>
-        <div class="mosaic">
-          {mosaic.map(photo => <Picture img={image(byFile(photo.src), photo.caption)} sizes="(min-width: 900px) 25vw, 50vw" />)}
+        <div class="mosaic" data-gallery>
+          {mosaic.map(photo => {
+            const img = image(byFile(photo.src), photo.caption);
+            return <button type="button" class="gallery__open mosaic__photo" data-full={img?.src ?? photo.src} data-alt={img?.alt ?? photo.caption} data-caption={photo.caption} aria-label={`Agrandir : ${photo.caption || 'photo'}`}>
+              <Picture img={img} sizes="(min-width: 900px) 25vw, 50vw" />
+              <span class="gallery__zoom" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="M20 20l-4.2-4.2M11 8.5v5M8.5 11h5" /></svg></span>
+            </button>;
+          })}
           {galerie && <a class="mosaic__more" href={pathOf(galerie)}>Voir les {photos.length} photos <span aria-hidden="true">→</span></a>}
         </div>
+        <GalleryViewer />
       </>}
       {partenaires.length > 0 && <div class="partners">
         <p class="partners__label">Nos partenaires</p>

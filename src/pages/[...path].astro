@@ -55,14 +55,14 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
     <section class="section">
       <div class="wrap">
         {categories.length > 1 && <div class="filters" role="group" aria-label="Filtrer les photos" data-gallery-filter>
-          <button type="button" aria-pressed="true" data-category="">Toutes</button>
-          {categories.map(category => <button type="button" aria-pressed="false" data-category={category}>{category}</button>)}
+          <button type="button" aria-pressed="true" data-category="">Toutes <span class="filters__n">{photos.length}</span></button>
+          {categories.map(category => <button type="button" aria-pressed="false" data-category={category}>{category} <span class="filters__n">{photos.filter(photo => photo.caption === category).length}</span></button>)}
         </div>}
         <div class="gallery" data-gallery>{photos.map((photo, index) => {
           const img = image(byFile(photo.src), photo.alt || photo.caption);
           const label = photo.alt || photo.caption || 'photo';
           return <figure data-category={photo.caption} style={`--i:${index % 8}`}>
-            <button type="button" class="gallery__open" data-full={img?.src ?? photo.src} data-alt={img?.alt ?? label} data-caption={photo.caption} aria-label={`Agrandir : ${label}`}>
+            <button type="button" class="gallery__open" data-id={index + 1} data-full={img?.src ?? photo.src} data-alt={img?.alt ?? label} data-caption={photo.caption} aria-label={`Agrandir : ${label}`}>
               <Picture img={img} sizes={index % 5 === 0 ? '(min-width: 900px) 50vw, 100vw' : '(min-width: 900px) 25vw, 50vw'} />
               <span class="gallery__zoom" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="M20 20l-4.2-4.2M11 8.5v5M8.5 11h5" /></svg></span>
             </button>
