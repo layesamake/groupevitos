@@ -9,9 +9,9 @@
 if (!defined('ABSPATH')) exit;
 
 const GVB_DB_VERSION = '1';
-const GVB_ROLES_VERSION = '2';
+const GVB_ROLES_VERSION = '3';
 const GVB_POLES = ['universite' => 'Université', 'lycee' => 'Lycée', 'itp' => 'ITP'];
-const GVB_DOMAINES = ['admissions' => 'Admissions', 'inscriptions' => 'Inscriptions', 'contacts' => 'Contacts', 'candidatures' => 'Candidatures (CV)', 'parametres' => 'Réglages'];
+const GVB_DOMAINES = ['admissions' => 'Admissions', 'inscriptions' => 'Inscriptions', 'contacts' => 'Contacts', 'publications' => 'Publications', 'candidatures' => 'Candidatures (CV)', 'parametres' => 'Réglages'];
 const GVB_ACTIONS = ['voir' => 'Consulter', 'creer' => 'Créer', 'modifier' => 'Modifier', 'valider' => 'Décider', 'annuler' => 'Annuler', 'exporter' => 'Exporter'];
 const GVB_PROFILS = ['gv_direction' => 'Direction', 'gv_scolarite' => 'Scolarité', 'gv_comptabilite' => 'Comptabilité', 'gv_responsable_pole' => 'Responsable de pôle'];
 const GVB_STATUTS = ['nouvelle' => 'Nouvelle', 'etude' => 'En étude', 'incomplete' => 'Dossier incomplet', 'attente' => 'Liste d’attente', 'acceptee' => 'Acceptée', 'refusee' => 'Refusée', 'inscrite' => 'Inscrite', 'abandonnee' => 'Abandonnée'];
@@ -29,7 +29,7 @@ function gvb_matrice() {
     $tout = 'voir,creer,modifier,valider,annuler,exporter';
     return [
         'gv_direction' => array_fill_keys(array_keys(GVB_DOMAINES), $tout),
-        'gv_scolarite' => ['admissions' => 'voir,creer,modifier,exporter', 'inscriptions' => 'voir,creer,modifier,exporter', 'contacts' => 'voir,modifier,exporter'],
+        'gv_scolarite' => ['admissions' => 'voir,creer,modifier,exporter', 'inscriptions' => 'voir,creer,modifier,exporter', 'contacts' => 'voir,modifier,exporter', 'publications' => 'voir,creer,annuler'],
         'gv_comptabilite' => ['admissions' => 'voir', 'inscriptions' => 'voir,exporter'],
         'gv_responsable_pole' => ['admissions' => 'voir,creer,modifier,valider', 'inscriptions' => 'voir'],
     ];
@@ -305,7 +305,7 @@ add_action('admin_menu', function () {
     add_menu_page('GROUPE VITOS', 'GROUPE VITOS', 'gv_acces', 'gv', 'gvb_page_tableau', 'dashicons-welcome-learn-more', 2);
     foreach ([
         ['Tableau de bord', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau'], ['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission'],
-        ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs'], ['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage'],
+        ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs'], ['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport'], ['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage'],
     ] as [$titre, $slug, $cap, $cb, $icone]) add_submenu_page('gv', $titre, '<span class="gvb-mi">' . gvb_icone($icone, 16) . '</span>' . esc_html($titre), $cap, $slug, $cb);
     add_submenu_page('gv', 'Candidatures (CV)', '<span class="gvb-mi">' . gvb_icone('cv', 16) . '</span>Candidatures (CV)', 'edit_candidatures', 'edit.php?post_type=candidature');
     add_submenu_page('gv', 'Utilisateurs', '<span class="gvb-mi">' . gvb_icone('utilisateurs', 16) . '</span>Utilisateurs', 'list_users', 'users.php');
