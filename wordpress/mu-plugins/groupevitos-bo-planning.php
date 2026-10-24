@@ -164,6 +164,7 @@ add_action('admin_post_gvb_seance_annuler', function () {
     if (!$s || $s->statut !== 'planifiee') gvb_retour('gv-planning', [], null, 'Seule une séance planifiée peut être annulée.');
     if ($motif === '') gvb_retour('gv-planning', ['sem' => gvb_lundi($s->date_seance)], null, 'Le motif est obligatoire.');
     $wpdb->update(gvb_table('seances'), ['statut' => 'annulee', 'motif' => $motif], ['id' => $s->id]);
+    do_action('gvb_seance_annulee', $s, $motif);
     gvb_log(0, 'Séance annulée', $s->date_seance . ' ' . gvb_hhmm($s->debut) . ' — ' . $motif);
     gvb_retour('gv-planning', ['sem' => gvb_lundi($s->date_seance)], 'Séance annulée.');
 });
@@ -183,6 +184,7 @@ add_action('admin_post_gvb_seance_reporter', function () {
         if ($aff && gvb_heures_planifiees_aff($s->cours_id, $s->enseignant_id, $s->annee, $s->id) + gvb_duree_h($debut . ':00', $fin . ':00') > $aff->heures + 0.001) gvb_retour('gv-planning', $retour, null, 'Les heures affectées (' . $aff->heures . ' h) seraient dépassées.');
         $wpdb->update(gvb_table('seances'), ['date_seance' => $date, 'debut' => $debut . ':00', 'fin' => $fin . ':00'], ['id' => $s->id]);
     } finally { $wpdb->get_var("SELECT RELEASE_LOCK('gvb_edt')"); }
+    do_action('gvb_seance_reportee', $s, $date, $debut, $fin);
     gvb_log(0, 'Séance reportée', $s->date_seance . ' ' . gvb_hhmm($s->debut) . ' → ' . $date . ' ' . $debut);
     gvb_retour('gv-planning', ['sem' => gvb_lundi($date)], 'Séance reportée.');
 });
@@ -245,6 +247,7 @@ function gvb_enregistrer_appel($seance_id, array $statuts, array $notes = []) {
     }
     $wpdb->update(gvb_table('seances'), ['statut' => 'tenue'], ['id' => $s->id]);
     gvb_log(0, 'Appel enregistré', $s->date_seance . ' ' . gvb_hhmm($s->debut) . ' — ' . $n . ' étudiant(s)');
+    do_action('gvb_appel_enregistre', $s, $statuts);
     return $n;
 }
 function gvb_page_seance() {

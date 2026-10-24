@@ -110,6 +110,7 @@ function gvb_enregistrer_paiement($etudiant_id, $montant, $mode, $date, $referen
     $wpdb->insert(gvb_table('paiements'), ['etudiant_id' => $e->id, 'montant' => $montant, 'mode' => $mode, 'reference' => $reference, 'date_paiement' => $date, 'recu' => $recu, 'note' => $note, 'saisi_par' => get_current_user_id(), 'cree_le' => gvb_now()]);
     $pid = (int) $wpdb->insert_id;
     gvb_log($e->demande_id, 'Paiement enregistré', $recu . ' — ' . gvb_montant($montant) . ' — ' . GVB_MODES[$mode]);
+    do_action('gvb_paiement_enregistre', $pid, $e, $recu, $montant);
     return $pid;
 }
 

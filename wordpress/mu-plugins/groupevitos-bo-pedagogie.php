@@ -277,6 +277,7 @@ function gvb_page_enseignant() {
         if ($opts) echo gvb_details('Affecter un cours', gvb_form('gvb_affecter', 'gvb_affecter', ['enseignant' => $e->id, 'annee' => $annee, 'retour_ens' => 1]) . gvb_liste('cours', 'Cours', $opts) . gvb_champ('heures', 'Heures', '', 'number', 'min="1" step="1" required') . gvb_bouton('Affecter', false) . '</form>');
     }
     echo '</div></div></div>';
+    do_action('gvb_fiche_enseignant_apres', $e);
     gvb_fin();
 }
 add_action('admin_post_gvb_ens_sauver', function () {
