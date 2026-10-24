@@ -1,0 +1,411 @@
+[
+ {
+  "slug": "direction",
+  "fichier": "01-direction",
+  "titre": "Direction",
+  "profil": "gv_direction",
+  "public": "Direction",
+  "resume": "Gérer les comptes, régler l’outil, décider des admissions et piloter l’activité.",
+  "minutes": 20,
+  "sections": [
+   {
+    "id": "ce-que-ce-tutoriel-vous-permet-de-faire",
+    "titre": "Ce que ce tutoriel vous permet de faire"
+   },
+   {
+    "id": "etape-1-votre-premiere-connexion",
+    "titre": "Étape 1 — Votre première connexion"
+   },
+   {
+    "id": "etape-2-comprendre-votre-accueil",
+    "titre": "Étape 2 — Comprendre votre accueil"
+   },
+   {
+    "id": "etape-3-creer-les-comptes-de-l-equipe",
+    "titre": "Étape 3 — Créer les comptes de l'équipe"
+   },
+   {
+    "id": "etape-4-regler-le-back-office-une-fois-puis-chaque-rentree",
+    "titre": "Étape 4 — Régler le back-office (une fois, puis chaque rentrée)"
+   },
+   {
+    "id": "etape-5-decider-des-demandes-d-admission",
+    "titre": "Étape 5 — Décider des demandes d'admission"
+   },
+   {
+    "id": "etape-6-suivre-l-activite-avec-le-pilotage",
+    "titre": "Étape 6 — Suivre l'activité avec le Pilotage"
+   },
+   {
+    "id": "etape-7-les-actions-reservees-a-la-direction",
+    "titre": "Étape 7 — Les actions réservées à la Direction"
+   },
+   {
+    "id": "etape-8-surveiller-les-communications-automatiques",
+    "titre": "Étape 8 — Surveiller les communications automatiques"
+   },
+   {
+    "id": "ma-journee-type-10-minutes",
+    "titre": "Ma journée type (10 minutes)"
+   },
+   {
+    "id": "check-list-de-rentree",
+    "titre": "Check-list de rentrée"
+   },
+   {
+    "id": "erreurs-frequentes",
+    "titre": "Erreurs fréquentes"
+   },
+   {
+    "id": "aide-memoire",
+    "titre": "Aide-mémoire"
+   }
+  ]
+ },
+ {
+  "slug": "scolarite",
+  "fichier": "02-scolarite",
+  "titre": "Scolarité",
+  "profil": "gv_scolarite",
+  "public": "Scolarité",
+  "resume": "Admissions, inscriptions, étudiants, emploi du temps, appel et absences.",
+  "minutes": 20,
+  "sections": [
+   {
+    "id": "ce-que-ce-tutoriel-vous-permet-de-faire",
+    "titre": "Ce que ce tutoriel vous permet de faire"
+   },
+   {
+    "id": "etape-1-se-connecter",
+    "titre": "Étape 1 — Se connecter"
+   },
+   {
+    "id": "etape-2-lire-votre-accueil",
+    "titre": "Étape 2 — Lire votre accueil"
+   },
+   {
+    "id": "etape-3-saisir-une-demande-d-admission",
+    "titre": "Étape 3 — Saisir une demande d'admission"
+   },
+   {
+    "id": "etape-4-suivre-un-dossier",
+    "titre": "Étape 4 — Suivre un dossier"
+   },
+   {
+    "id": "etape-5-inscrire-un-candidat-accepte",
+    "titre": "Étape 5 — Inscrire un candidat accepté"
+   },
+   {
+    "id": "etape-6-gerer-les-fiches-etudiants",
+    "titre": "Étape 6 — Gérer les fiches étudiants"
+   },
+   {
+    "id": "etape-7-planifier-les-seances",
+    "titre": "Étape 7 — Planifier les séances"
+   },
+   {
+    "id": "etape-8-faire-l-appel",
+    "titre": "Étape 8 — Faire l'appel"
+   },
+   {
+    "id": "etape-9-suivre-les-absences",
+    "titre": "Étape 9 — Suivre les absences"
+   },
+   {
+    "id": "etape-10-annonces-et-espaces-en-ligne",
+    "titre": "Étape 10 — Annonces et espaces en ligne"
+   },
+   {
+    "id": "ma-journee-type",
+    "titre": "Ma journée type"
+   },
+   {
+    "id": "erreurs-frequentes",
+    "titre": "Erreurs fréquentes"
+   },
+   {
+    "id": "aide-memoire",
+    "titre": "Aide-mémoire"
+   }
+  ]
+ },
+ {
+  "slug": "comptabilite",
+  "fichier": "03-comptabilite",
+  "titre": "Comptabilité",
+  "profil": "gv_comptabilite",
+  "public": "Comptabilité",
+  "resume": "Paiements, reçus, échéanciers, impayés et exports.",
+  "minutes": 15,
+  "sections": [
+   {
+    "id": "ce-que-ce-tutoriel-vous-permet-de-faire",
+    "titre": "Ce que ce tutoriel vous permet de faire"
+   },
+   {
+    "id": "etape-1-se-connecter",
+    "titre": "Étape 1 — Se connecter"
+   },
+   {
+    "id": "etape-2-lire-votre-accueil",
+    "titre": "Étape 2 — Lire votre accueil"
+   },
+   {
+    "id": "etape-3-ouvrir-le-compte-financier-d-un-etudiant",
+    "titre": "Étape 3 — Ouvrir le compte financier d'un étudiant"
+   },
+   {
+    "id": "etape-4-enregistrer-un-paiement",
+    "titre": "Étape 4 — Enregistrer un paiement"
+   },
+   {
+    "id": "etape-5-le-recu",
+    "titre": "Étape 5 — Le reçu"
+   },
+   {
+    "id": "etape-6-corriger-un-echeancier",
+    "titre": "Étape 6 — Corriger un échéancier"
+   },
+   {
+    "id": "etape-7-relancer-les-impayes",
+    "titre": "Étape 7 — Relancer les impayés"
+   },
+   {
+    "id": "etape-8-suivre-et-exporter",
+    "titre": "Étape 8 — Suivre et exporter"
+   },
+   {
+    "id": "ma-journee-type",
+    "titre": "Ma journée type"
+   },
+   {
+    "id": "fin-de-mois",
+    "titre": "Fin de mois"
+   },
+   {
+    "id": "erreurs-frequentes",
+    "titre": "Erreurs fréquentes"
+   },
+   {
+    "id": "aide-memoire",
+    "titre": "Aide-mémoire"
+   }
+  ]
+ },
+ {
+  "slug": "responsable-de-pole",
+  "fichier": "04-responsable-de-pole",
+  "titre": "Responsable de pôle",
+  "profil": "gv_responsable_pole",
+  "public": "Responsable de pôle",
+  "resume": "Décisions d’admission, cours, enseignants et emploi du temps de votre pôle.",
+  "minutes": 20,
+  "sections": [
+   {
+    "id": "ce-que-ce-tutoriel-vous-permet-de-faire",
+    "titre": "Ce que ce tutoriel vous permet de faire"
+   },
+   {
+    "id": "etape-1-se-connecter",
+    "titre": "Étape 1 — Se connecter"
+   },
+   {
+    "id": "etape-2-lire-votre-accueil",
+    "titre": "Étape 2 — Lire votre accueil"
+   },
+   {
+    "id": "etape-3-decider-d-une-demande-d-admission",
+    "titre": "Étape 3 — Décider d'une demande d'admission"
+   },
+   {
+    "id": "etape-4-creer-les-cours",
+    "titre": "Étape 4 — Créer les cours"
+   },
+   {
+    "id": "etape-5-creer-ou-retrouver-un-enseignant",
+    "titre": "Étape 5 — Créer ou retrouver un enseignant"
+   },
+   {
+    "id": "etape-6-affecter-un-enseignant-a-un-cours",
+    "titre": "Étape 6 — Affecter un enseignant à un cours"
+   },
+   {
+    "id": "etape-7-organiser-l-emploi-du-temps",
+    "titre": "Étape 7 — Organiser l'emploi du temps"
+   },
+   {
+    "id": "etape-8-faire-ou-controler-l-appel",
+    "titre": "Étape 8 — Faire ou contrôler l'appel"
+   },
+   {
+    "id": "etape-9-suivre-votre-pole",
+    "titre": "Étape 9 — Suivre votre pôle"
+   },
+   {
+    "id": "ma-journee-type",
+    "titre": "Ma journée type"
+   },
+   {
+    "id": "debut-de-semestre",
+    "titre": "Début de semestre"
+   },
+   {
+    "id": "erreurs-frequentes",
+    "titre": "Erreurs fréquentes"
+   },
+   {
+    "id": "aide-memoire",
+    "titre": "Aide-mémoire"
+   }
+  ]
+ },
+ {
+  "slug": "communication",
+  "fichier": "05-communication",
+  "titre": "Chargé de communication",
+  "profil": "gv_communication",
+  "public": "Chargé de communication",
+  "resume": "Facebook, annonces, plaquette et actualités du site.",
+  "minutes": 15,
+  "sections": [
+   {
+    "id": "ce-que-ce-tutoriel-vous-permet-de-faire",
+    "titre": "Ce que ce tutoriel vous permet de faire"
+   },
+   {
+    "id": "etape-1-se-connecter",
+    "titre": "Étape 1 — Se connecter"
+   },
+   {
+    "id": "etape-2-lire-votre-accueil",
+    "titre": "Étape 2 — Lire votre accueil"
+   },
+   {
+    "id": "etape-3-publier-sur-facebook",
+    "titre": "Étape 3 — Publier sur Facebook"
+   },
+   {
+    "id": "etape-4-diffuser-une-annonce",
+    "titre": "Étape 4 — Diffuser une annonce"
+   },
+   {
+    "id": "etape-5-traiter-les-contacts-de-la-plaquette",
+    "titre": "Étape 5 — Traiter les contacts de la plaquette"
+   },
+   {
+    "id": "etape-6-publier-une-actualite-sur-le-site",
+    "titre": "Étape 6 — Publier une actualité sur le site"
+   },
+   {
+    "id": "etape-7-suivre-les-envois-automatiques",
+    "titre": "Étape 7 — Suivre les envois automatiques"
+   },
+   {
+    "id": "ma-journee-type",
+    "titre": "Ma journée type"
+   },
+   {
+    "id": "bonnes-pratiques",
+    "titre": "Bonnes pratiques"
+   },
+   {
+    "id": "erreurs-frequentes",
+    "titre": "Erreurs fréquentes"
+   },
+   {
+    "id": "aide-memoire",
+    "titre": "Aide-mémoire"
+   }
+  ]
+ },
+ {
+  "slug": "famille-etudiant",
+  "fichier": "06-famille-etudiant",
+  "titre": "Espace en ligne des familles et des étudiants",
+  "profil": "",
+  "public": "Espace familles et étudiants",
+  "resume": "Ce que voient les familles et les étudiants : emploi du temps, présences, finances, annonces.",
+  "minutes": 10,
+  "sections": [
+   {
+    "id": "a-quoi-sert-votre-espace",
+    "titre": "À quoi sert votre espace"
+   },
+   {
+    "id": "etape-1-creer-votre-mot-de-passe-premiere-fois",
+    "titre": "Étape 1 — Créer votre mot de passe (première fois)"
+   },
+   {
+    "id": "etape-2-vous-connecter",
+    "titre": "Étape 2 — Vous connecter"
+   },
+   {
+    "id": "etape-3-l-accueil",
+    "titre": "Étape 3 — L'accueil"
+   },
+   {
+    "id": "etape-4-l-emploi-du-temps",
+    "titre": "Étape 4 — L'emploi du temps"
+   },
+   {
+    "id": "etape-5-les-presences",
+    "titre": "Étape 5 — Les présences"
+   },
+   {
+    "id": "etape-6-les-finances",
+    "titre": "Étape 6 — Les finances"
+   },
+   {
+    "id": "plusieurs-enfants",
+    "titre": "Plusieurs enfants"
+   },
+   {
+    "id": "notifications-par-e-mail",
+    "titre": "Notifications par e-mail"
+   },
+   {
+    "id": "questions-frequentes",
+    "titre": "Questions fréquentes"
+   }
+  ]
+ },
+ {
+  "slug": "enseignant",
+  "fichier": "07-enseignant",
+  "titre": "Espace en ligne des enseignants",
+  "profil": "",
+  "public": "Espace enseignants",
+  "resume": "Ce que voient les enseignants : séances, appel, heures, annonces.",
+  "minutes": 8,
+  "sections": [
+   {
+    "id": "a-quoi-sert-votre-espace",
+    "titre": "À quoi sert votre espace"
+   },
+   {
+    "id": "etape-1-creer-votre-mot-de-passe-premiere-fois",
+    "titre": "Étape 1 — Créer votre mot de passe (première fois)"
+   },
+   {
+    "id": "etape-2-vous-connecter",
+    "titre": "Étape 2 — Vous connecter"
+   },
+   {
+    "id": "etape-3-l-accueil",
+    "titre": "Étape 3 — L'accueil"
+   },
+   {
+    "id": "etape-4-faire-l-appel",
+    "titre": "Étape 4 — Faire l'appel"
+   },
+   {
+    "id": "etape-5-suivre-vos-heures",
+    "titre": "Étape 5 — Suivre vos heures"
+   },
+   {
+    "id": "questions-frequentes",
+    "titre": "Questions fréquentes"
+   }
+  ]
+ }
+]

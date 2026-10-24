@@ -91,6 +91,7 @@ function gvb_aide_textes() {
         'gv-espaces' => ['Comptes des familles, étudiants et enseignants. Les accès se créent sur invitation : la personne reçoit un lien pour choisir son mot de passe.', []],
         'gv-reglages' => ['Réglages de l’établissement : année en cours, e-mails, Brevo, Facebook, échéancier, notifications, résumés et accueil par profil.', []],
         'gv-recherche' => ['Cherchez un nom, un matricule, un code de demande, un téléphone, un e-mail ou un numéro de reçu : les résultats se limitent à ce que votre profil peut voir.', []],
+        'gv-tutoriels' => ['Tutoriels pas à pas, avec captures d’écran, pour chaque profil. Ouvrez celui de votre profil pour apprendre les tâches courantes ; vous pouvez l’imprimer.', []],
         'gv-preferences' => ['Vos réglages personnels : résumés par e-mail, aide et guide de bienvenue.', []],
     ];
 }
