@@ -148,6 +148,7 @@ function gvb_page_tableau() {
         . gvb_carte('Acceptées à inscrire', $s['acceptee'], 'Prêtes pour l’inscription', 'inscription', '', gvb_url('gv-admissions', ['statut' => 'acceptee', 'annee' => $k['annee']]))
         . gvb_carte('Inscrits', $k['inscrits'], 'Année ' . $k['annee'], 'pole', 'ok', gvb_url('gv-inscriptions', ['annee' => $k['annee']]))
         . gvb_carte('Doublons probables', $k['doublons'], 'À vérifier', 'utilisateurs', $k['doublons'] ? 'attention' : '') . '</div>';
+    if (gvb_can('contacts', 'voir')) { global $wpdb; echo '<div class="gvb-cartes">' . gvb_carte('Contacts plaquette (7 jours)', (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM ' . gvb_table('contacts') . ' WHERE cree_le > %s', gmdate('Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS))), 'Visiteurs ayant demandé la plaquette', 'utilisateurs', '', gvb_url('gv-contacts')) . '</div>'; }
     $lignes = [];
     foreach (GVB_POLES as $slug => $nom) { if ($pole !== '' && $pole !== $slug) continue; $p = $k['poles'][$slug] ?? []; $lignes[] = '<tr><td><strong>' . esc_html($nom) . '</strong></td><td>' . array_sum($p) . '</td><td>' . ($p['acceptee'] ?? 0) . '</td><td>' . ($p['inscrite'] ?? 0) . '</td><td>' . ($p['refusee'] ?? 0) . '</td></tr>'; }
     echo '<div class="gvb-boite"><h2>' . gvb_icone('pole', 18) . 'Répartition par pôle</h2>' . gvb_tableau(['Pôle', 'Demandes', 'Acceptées', 'Inscrites', 'Refusées'], $lignes) . '</div>';
@@ -164,6 +165,7 @@ function gvb_page_reglages() {
     gvb_debut('Réglages', 'reglage');
     echo '<div class="gvb-boite" style="max-width:640px"><h2>' . gvb_icone('reglage', 18) . 'Admissions</h2>' . gvb_form('gvb_reglages_sauver', 'gvb_reglages_sauver') . gvb_champ('annee', 'Année académique en cours', $r['annee'], 'text', 'required pattern="[0-9]{4}[–-][0-9]{4}"')
         . gvb_champ('email', 'E-mail d’alerte des nouvelles demandes', $r['email'], 'email', 'required') . (gvb_can('parametres', 'modifier') ? gvb_bouton('Enregistrer') : '') . '</form></div>';
+    do_action('gvb_reglages_apres');
     gvb_fin();
 }
 add_action('admin_post_gvb_reglages_sauver', function () {

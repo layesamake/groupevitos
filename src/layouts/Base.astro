@@ -84,7 +84,7 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
           <strong set:html={site.name} />
           <p>{identite.devise}</p>
         </div>
-        <ul class="footer__links">{[...nav, ...(page('partenaires') ? [{ path: pathOf(page('partenaires')!), label: 'Partenaires' }] : []), ...(page('enseignants') ? [{ path: pathOf(page('enseignants')!), label: 'Enseignants' }] : [])].map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
+        <ul class="footer__links">{[...nav, ...(page('partenaires') ? [{ path: pathOf(page('partenaires')!), label: 'Partenaires' }] : []), ...(page('enseignants') ? [{ path: pathOf(page('enseignants')!), label: 'Enseignants' }] : []), { path: '/#plaquette', label: 'Recevoir la plaquette' }].map(item => <li><a href={item.path}>{item.label}</a></li>)}</ul>
         <ul class="footer__links">
           {phones.slice(0, 4).map(c => <li><a href={telHref(c.meta.valeur)}>{c.meta.usage} : {c.meta.valeur}</a></li>)}
           {email && <li><a href={`mailto:${email}`}>{email}</a></li>}

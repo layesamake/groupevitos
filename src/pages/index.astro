@@ -5,6 +5,7 @@ import FormationCard from '../components/FormationCard.astro';
 import FamilyFilter from '../components/FamilyFilter.astro';
 import Picture from '../components/Picture.astro';
 import Icon from '../components/Icon.astro';
+import PlaquetteForm from '../components/PlaquetteForm.astro';
 import { familiesOf, getContent, pageBySlug, pathOf } from '../lib/wordpress';
 import { featured, image, plain } from '../lib/html';
 import { figures, listItems, section, stairLines, steps } from '../lib/extract';
@@ -130,6 +131,14 @@ const reperes = [
       </div>}
     </div>
   </section>}
+
+  <section class="section" id="plaquette">
+    <div class="wrap">
+      <div class="section__head"><Eyebrow>Documentation</Eyebrow><h2>Recevez la plaquette du Groupe</h2></div>
+      <p>Formations, admissions, frais : tout le Groupe VITO S. dans un document. Recevez-le par e-mail ou sur WhatsApp.</p>
+      <PlaquetteForm />
+    </div>
+  </section>
 
   {(phone || email) && <section class="section section--cobalt">
     <div class="wrap contact">

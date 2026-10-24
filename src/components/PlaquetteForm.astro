@@ -1,0 +1,60 @@
+---
+// Demande de la plaquette par e-mail ou WhatsApp : enregistrée dans le back-office (Contacts).
+const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-json';
+---
+<form class="cv-form plaquette-form" data-api={`${api}/groupevitos/v1/plaquette`} novalidate>
+  <fieldset class="plaquette-form__canal">
+    <legend>Où voulez-vous la recevoir ?</legend>
+    <label><input type="radio" name="canal" value="email" checked> Par e-mail</label>
+    <label><input type="radio" name="canal" value="whatsapp"> Par WhatsApp</label>
+  </fieldset>
+  <div class="cv-form__grid">
+    <label data-canal="email">Votre adresse e-mail<input name="email" type="email" autocomplete="email" required></label>
+    <label data-canal="whatsapp" hidden>Votre numéro WhatsApp<input name="whatsapp" type="tel" autocomplete="tel" inputmode="tel" placeholder="+223 70 00 00 00"></label>
+    <label>Pôle qui vous intéresse (facultatif)
+      <select name="pole"><option value="">Tous</option><option value="universite">Université</option><option value="lycee">Lycée</option><option value="itp">ITP</option></select>
+    </label>
+  </div>
+  <input type="hidden" name="source" value="">
+  <input class="cv-form__trap" name="site_web" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <label class="cv-form__consent"><input name="consentement" type="checkbox" value="1" required> J’accepte que le Groupe VITO S. conserve mon contact (24 mois) pour m’envoyer la plaquette et répondre à ma demande. Désinscription possible à tout moment.</label>
+  <button class="btn btn--night" type="submit">Recevoir la plaquette</button>
+  <p class="cv-form__status" role="status" aria-live="polite"></p>
+</form>
+<script>
+  const form = document.querySelector<HTMLFormElement>('.plaquette-form');
+  const status = form?.querySelector<HTMLElement>('.cv-form__status');
+  const sync = () => {
+    const canal = (form!.elements.namedItem('canal') as RadioNodeList).value;
+    form!.querySelectorAll<HTMLElement>('[data-canal]').forEach(label => {
+      const active = label.dataset.canal === canal;
+      label.hidden = !active;
+      const input = label.querySelector('input')!;
+      input.required = active;
+      if (!active) input.value = '';
+    });
+  };
+  if (form) {
+    (form.elements.namedItem('source') as HTMLInputElement).value = location.pathname;
+    form.addEventListener('change', sync);
+    sync();
+  }
+  form?.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!status || !form.reportValidity()) return;
+    const button = form.querySelector('button')!;
+    button.disabled = true;
+    status.textContent = 'Envoi en cours…';
+    try {
+      const response = await fetch(form.dataset.api!, { method: 'POST', body: new FormData(form) });
+      const answer = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(answer.message ?? 'L’envoi a échoué. Réessayez ou contactez-nous.');
+      form.reset(); sync();
+      status.textContent = answer.canal === 'whatsapp'
+        ? 'Merci ! Notre équipe vous envoie la plaquette sur WhatsApp.'
+        : 'Merci ! La plaquette vient de vous être envoyée par e-mail (pensez à vérifier vos courriers indésirables).';
+    } catch (error) {
+      status.textContent = (error as Error).message;
+    } finally { button.disabled = false; }
+  });
+</script>
