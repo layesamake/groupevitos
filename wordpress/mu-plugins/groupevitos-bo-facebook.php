@@ -199,7 +199,7 @@ function gvb_page_publications() {
     gvb_exiger('publications', 'voir');
     global $wpdb;
     $c = gvb_fb_reglages();
-    gvb_debut('Publications Facebook', 'rapport');
+    gvb_debut('Publications Facebook', 'rapport', '<a class="button" target="_blank" rel="noopener" href="https://www.facebook.com/groupevitos">Voir la page Facebook</a>');
     if (!$c['actif'] || $c['jeton'] === '') echo '<div class="gvb-alerte">La connexion à Facebook n’est pas activée. ' . (gvb_can('parametres', 'modifier') ? '<a href="' . esc_url(gvb_url('gv-reglages')) . '">Ouvrir les Réglages</a>' : 'Contactez la Direction.') . '</div>';
     if (gvb_can('publications', 'creer')) {
         $texte = isset($_GET['texte']) ? sanitize_textarea_field(wp_unslash($_GET['texte'])) : '';

@@ -94,7 +94,7 @@ export const coordonnees = [
   { title: 'E-mail imprimé sur les supports', type: 'email', valeur: 'contact@institutvitos.com', usage: 'Courriel imprimé (S02)', poles: 'tous', note: 'Validité de la boîte à confirmer avant publication.', status: 'draft' },
   { title: 'Adresse principale', type: 'adresse', valeur: 'Kalaban Coura, rue 30, immeuble VITO S., Bamako, Mali', usage: 'Siège', poles: 'tous', note: 'S02, S03, S09', status: 'publish' },
   { title: 'Adresse de la fiche secondaire', type: 'adresse', valeur: 'Carrefour Kalaban Coura / Daoudabougou, rue 30, Bamako', usage: 'Fiche Lycée et ITP (S10)', poles: 'lycee,itp', note: 'Formulation différente : à rapprocher de l’adresse principale.', status: 'draft' },
-  { title: 'Facebook', type: 'reseau', valeur: 'https://www.facebook.com/institutvitosmali', usage: 'Facebook', poles: 'tous', note: 'Références communiquées pour le projet', status: 'publish' },
+  { title: 'Facebook', type: 'reseau', valeur: 'https://www.facebook.com/groupevitos', usage: 'Facebook', poles: 'tous', note: 'Références communiquées pour le projet', status: 'publish' },
   { title: 'Instagram', type: 'reseau', valeur: 'https://www.instagram.com/institut.vitos/', usage: 'Instagram', poles: 'tous', note: 'Références communiquées pour le projet', status: 'publish' },
   { title: 'LinkedIn', type: 'reseau', valeur: 'https://www.linkedin.com/company/institut-vito-s/', usage: 'LinkedIn', poles: 'tous', note: 'Références communiquées pour le projet', status: 'publish' },
   { title: 'Orange Money', type: 'paiement', valeur: '+223 94 58 90 87', usage: 'Paiement des frais', poles: 'universite', note: 'Moyen de paiement, pas un contact admission. Bénéficiaire et validité à confirmer avant publication.', status: 'draft' },
