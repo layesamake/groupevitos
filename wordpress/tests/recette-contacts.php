@@ -17,22 +17,23 @@ file_put_contents(gvb_plaquette_chemin(), "%PDF-1.4\n%%EOF\n");
 
 $pub = fn($champs) => (function () use ($champs) { $r = new WP_REST_Request('POST', '/groupevitos/v1/plaquette'); $r->set_body_params($champs); $rep = rest_do_request($r); return [$rep->get_status(), $rep->get_data()]; })();
 $lignes[] = '## Formulaire';
-[$c, $d] = $pub(['canal' => 'email', 'email' => 'visiteur@exemple.test', 'pole' => 'lycee', 'consentement' => '1']);
+[$c, $d] = $pub(['canal' => 'email', 'nom' => 'Awa Diarra', 'email' => 'visiteur@exemple.test', 'pole' => 'lycee', 'consentement' => '1']);
 $ct = $wpdb->get_row("SELECT * FROM $T WHERE email = 'visiteur@exemple.test'");
-$t('e-mail enregistré, envoyé', $c === 200 && $ct && $ct->statut === 'envoye' && $ct->envois === '1' && $ct->pole === 'lycee', json_encode($d));
+$t('e-mail enregistré, envoyé', $c === 200 && $ct && $ct->nom === 'Awa Diarra' && $ct->statut === 'envoye' && $ct->envois === '1' && $ct->pole === 'lycee', json_encode($d));
+[$c] = $pub(['canal' => 'email', 'email' => 'sansnom@exemple.test', 'consentement' => '1']); $t('nom obligatoire', $c === 422);
 $t('e-mail parti avec le lien personnel', !empty($GLOBALS['gvb_mails']) && $GLOBALS['gvb_mails'][0][0] === 'visiteur@exemple.test' && strlen($ct->token) === 40);
-[$c] = $pub(['canal' => 'email', 'email' => 'pas-un-mail', 'consentement' => '1']); $t('e-mail invalide : refusé', $c === 422);
-[$c] = $pub(['canal' => 'email', 'email' => 'x@exemple.test']); $t('sans consentement : refusé', $c === 422);
-[$c] = $pub(['canal' => 'whatsapp', 'whatsapp' => '12', 'consentement' => '1']); $t('numéro WhatsApp invalide : refusé', $c === 422);
-[$c] = $pub(['canal' => 'whatsapp', 'whatsapp' => '70 11 22 33', 'pole' => 'universite', 'consentement' => '1']);
+[$c] = $pub(['canal' => 'email', 'nom' => 'X', 'email' => 'pas-un-mail', 'consentement' => '1']); $t('e-mail invalide : refusé', $c === 422);
+[$c] = $pub(['canal' => 'email', 'nom' => 'X', 'email' => 'x@exemple.test']); $t('sans consentement : refusé', $c === 422);
+[$c] = $pub(['canal' => 'whatsapp', 'nom' => 'X', 'whatsapp' => '12', 'consentement' => '1']); $t('numéro WhatsApp invalide : refusé', $c === 422);
+[$c] = $pub(['canal' => 'whatsapp', 'nom' => 'Sidi', 'whatsapp' => '70 11 22 33', 'pole' => 'universite', 'consentement' => '1']);
 $w = $wpdb->get_row("SELECT * FROM $T WHERE canal = 'whatsapp'");
 $t('WhatsApp : numéro normalisé (+223), mis en file', $c === 200 && $w && $w->whatsapp === '+22370112233' && $w->statut === 'manuel', json_encode($w));
 add_filter('gvb_whatsapp_envoyer', fn($ok, $num, $lien) => str_starts_with($lien, 'http') && $num === '+22376000001', 10, 3);
-[$c] = $pub(['canal' => 'whatsapp', 'whatsapp' => '+223 76 00 00 01', 'consentement' => '1']);
+[$c] = $pub(['canal' => 'whatsapp', 'nom' => 'Fanta', 'whatsapp' => '+223 76 00 00 01', 'consentement' => '1']);
 $t('crochet API WhatsApp : statut « envoyé »', $wpdb->get_var("SELECT statut FROM $T WHERE whatsapp = '+22376000001'") === 'whatsapp_envoye');
-$n = (int) $wpdb->get_var("SELECT COUNT(*) FROM $T"); [$c] = $pub(['canal' => 'email', 'email' => 'piege@exemple.test', 'consentement' => '1', 'site_web' => 'spam']);
+$n = (int) $wpdb->get_var("SELECT COUNT(*) FROM $T"); [$c] = $pub(['canal' => 'email', 'nom' => 'Piege', 'email' => 'piege@exemple.test', 'consentement' => '1', 'site_web' => 'spam']);
 $t('champ piège : rien enregistré', $c === 200 && (int) $wpdb->get_var("SELECT COUNT(*) FROM $T") === $n);
-for ($i = 0; $i < 6; $i++) [$c] = $pub(['canal' => 'email', 'email' => "a$i@exemple.test", 'consentement' => '1']);
+for ($i = 0; $i < 6; $i++) [$c] = $pub(['canal' => 'email', 'nom' => 'Test', 'email' => "a$i@exemple.test", 'consentement' => '1']);
 $t('limite par adresse IP', $c === 429);
 $t('lecture publique impossible', rest_do_request(new WP_REST_Request('GET', '/groupevitos/v1/plaquette'))->get_status() === 404);
 
@@ -47,7 +48,7 @@ $wpdb->update($T, ['token_expire' => gmdate('Y-m-d H:i:s', time() + 3600)], ['id
 $_GET = ['t' => $ct->token]; try { do_action('admin_post_nopriv_gvb_desinscrire'); } catch (Exception $e) {}
 $t('désinscription : état mis à jour, lien invalidé', $wpdb->get_var("SELECT statut FROM $T WHERE id = {$ct->id}") === 'desinscrit' && str_starts_with($telecharger($ct->token), 'DIE:'));
 delete_transient('gvb_rlc_' . md5('203.0.113.20'));
-[$c] = $pub(['canal' => 'email', 'email' => 'visiteur@exemple.test', 'consentement' => '1']); $t('contact désinscrit : pas de réenvoi', $c === 422);
+[$c] = $pub(['canal' => 'email', 'nom' => 'Awa', 'email' => 'visiteur@exemple.test', 'consentement' => '1']); $t('contact désinscrit : pas de réenvoi', $c === 422);
 
 $lignes[] = "\n## Consultation";
 $envoyer = function ($action, $nonce, array $post) { $_POST = $post + ['_wpnonce' => wp_create_nonce($nonce)]; $_REQUEST = $_POST; try { do_action('admin_post_' . $action); return 'rien'; } catch (Throwable $e) { return $e->getMessage(); } };

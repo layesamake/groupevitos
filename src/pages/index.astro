@@ -142,7 +142,7 @@ const reperes = [
 
   {(phone || email) && <section class="section section--cobalt">
     <div class="wrap contact">
-      <h2>Une question ?<br />Parlons-en.</h2>
+      <h2>Une question&nbsp;? Parlons-en.</h2>
       <div class="contact__list">
         {phone && <a class="contact__item" href={telHref(phone.meta.valeur)}><Icon name="phone" /><span><strong>Appeler {phone.meta.usage}</strong><span>{phone.meta.valeur}</span></span></a>}
         {email && <a class="contact__item" href={`mailto:${email.meta.valeur}`}><Icon name="mail" /><span><strong>Écrire un e-mail</strong><span>{email.meta.valeur}</span></span></a>}

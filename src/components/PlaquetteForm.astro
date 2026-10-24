@@ -9,6 +9,7 @@ const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-j
     <label><input type="radio" name="canal" value="whatsapp"> Par WhatsApp</label>
   </fieldset>
   <div class="cv-form__grid">
+    <label>Votre nom<input name="nom" autocomplete="name" required></label>
     <label data-canal="email">Votre adresse e-mail<input name="email" type="email" autocomplete="email" required></label>
     <label data-canal="whatsapp" hidden>Votre numéro WhatsApp<input name="whatsapp" type="tel" autocomplete="tel" inputmode="tel" placeholder="+223 70 00 00 00"></label>
     <label>Pôle qui vous intéresse (facultatif)
@@ -19,6 +20,7 @@ const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-j
   <input class="cv-form__trap" name="site_web" tabindex="-1" autocomplete="off" aria-hidden="true">
   <label class="cv-form__consent"><input name="consentement" type="checkbox" value="1" required> J’accepte que le Groupe VITO S. conserve mon contact (24 mois) pour m’envoyer la plaquette et répondre à ma demande. Désinscription possible à tout moment.</label>
   <button class="btn btn--night" type="submit">Recevoir la plaquette</button>
+  <p class="plaquette-form__note">Bon à savoir : selon votre messagerie, le message peut arriver dans les courriers indésirables (spam) ou dans l’onglet « Promotions » de Gmail. Pensez à y jeter un œil si vous ne le voyez pas dans votre boîte de réception.</p>
   <p class="cv-form__status" role="status" aria-live="polite"></p>
 </form>
 <script>
@@ -52,7 +54,7 @@ const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-j
       form.reset(); sync();
       status.textContent = answer.canal === 'whatsapp'
         ? 'Merci ! Notre équipe vous envoie la plaquette sur WhatsApp.'
-        : 'Merci ! La plaquette vient de vous être envoyée par e-mail (si vous ne la voyez pas, regardez les onglets Promotions et Courrier indésirable).';
+        : 'Merci ! La plaquette vient de vous être envoyée par e-mail (si vous ne la voyez pas dans votre boîte de réception, vérifiez vos courriers indésirables ou l’onglet « Promotions » de Gmail).';
     } catch (error) {
       status.textContent = (error as Error).message;
     } finally { button.disabled = false; }

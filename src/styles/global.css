@@ -230,7 +230,7 @@ button { font: inherit; }
 .contact__item span { font-size: .9rem; }
 .section:not(.section--cobalt) .contact__item { background: var(--white); color: var(--night); border: 1px solid var(--line); }
 .section:not(.section--cobalt) .contact__item:first-child { background: var(--mango); border-color: var(--mango); }
-@media (min-width: 900px) { .contact { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: center; } .contact__list { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
+@media (min-width: 900px) { .contact { grid-template-columns: auto minmax(0, 1fr); gap: 2rem; align-items: center; } .contact h2 { white-space: nowrap; font-size: clamp(1.7rem, 2.6vw, 2.5rem); } .contact__list { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); } }
 .map { width: 100%; height: 360px; border: 0; border-radius: var(--radius); margin-top: 1.5rem; }
 
 /* Bandeau des pages intérieures */
@@ -385,3 +385,10 @@ button { font: inherit; }
 
 .footer__admin { color: inherit; opacity: .55; text-decoration: none; }
 .footer__admin:hover, .footer__admin:focus-visible { opacity: 1; text-decoration: underline; }
+
+.plaquette-form__canal { display: flex; flex-wrap: wrap; gap: 8px 24px; border: 1.5px solid var(--muted); border-radius: 12px; padding: 10px 16px 12px; }
+.plaquette-form__canal legend { padding-inline: 6px; font-weight: 700; font-size: .9rem; }
+.plaquette-form__canal label { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.plaquette-form .plaquette-form__canal input[type="radio"] { width: 20px; height: 20px; min-height: 0; padding: 0; accent-color: var(--cobalt); }
+
+.plaquette-form__note { margin: 0; font-size: .85rem; color: var(--muted); max-width: 46rem; }

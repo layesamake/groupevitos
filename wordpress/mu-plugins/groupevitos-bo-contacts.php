@@ -11,12 +11,13 @@ const GVB_CONTACT_VALIDITE_JOURS = 30;
 const GVB_CONSERVATION_MOIS = 24;
 
 add_action('init', function () {
-    if (get_option('gvb_db_contacts') === '1') return;
+    if (get_option('gvb_db_contacts') === '2') return;
     global $wpdb;
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta('CREATE TABLE ' . gvb_table('contacts') . " (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   canal varchar(10) NOT NULL DEFAULT 'email',
+  nom varchar(120) NOT NULL DEFAULT '',
   email varchar(190) NOT NULL DEFAULT '',
   whatsapp varchar(24) NOT NULL DEFAULT '',
   pole varchar(12) NOT NULL DEFAULT '',
@@ -35,7 +36,7 @@ add_action('init', function () {
   KEY token (token),
   KEY cree_le (cree_le)
 ) " . $wpdb->get_charset_collate() . ';');
-    update_option('gvb_db_contacts', '1', false);
+    update_option('gvb_db_contacts', '2', false);
 }, 5);
 
 function gvb_plaquette_chemin() {
@@ -91,6 +92,8 @@ function gvb_recevoir_contact(WP_REST_Request $r) {
         $wa = gvb_normaliser_whatsapp(wp_unslash($p['whatsapp'] ?? ''));
         if ($wa === '') return new WP_Error('whatsapp', 'Numéro WhatsApp invalide (indicatif pays puis numéro).', ['status' => 422]);
     }
+    $nom = mb_substr(sanitize_text_field(wp_unslash($p['nom'] ?? '')), 0, 120);
+    if ($nom === '') return new WP_Error('nom', 'Indiquez votre nom.', ['status' => 422]);
     $pole = isset(GVB_POLES[$p['pole'] ?? '']) ? $p['pole'] : '';
     $source = mb_substr(sanitize_text_field(wp_unslash($p['source'] ?? '')), 0, 120);
     set_transient($cle, $n + 1, HOUR_IN_SECONDS);
@@ -108,14 +111,14 @@ function gvb_recevoir_contact(WP_REST_Request $r) {
     $expire = gmdate('Y-m-d H:i:s', strtotime($now) + GVB_CONTACT_VALIDITE_JOURS * DAY_IN_SECONDS);
     if ($existant) {
         $id = (int) $existant->id;
-        $wpdb->update($t, ['token' => $token, 'token_expire' => $expire, 'pole' => $pole ?: $existant->pole], ['id' => $id]);
+        $wpdb->update($t, ['nom' => $nom, 'token' => $token, 'token_expire' => $expire, 'pole' => $pole ?: $existant->pole], ['id' => $id]);
     } else {
-        $wpdb->insert($t, ['canal' => $canal, 'email' => $email, 'whatsapp' => $wa, 'pole' => $pole, 'source' => $source, 'consentement_le' => $now, 'token' => $token, 'token_expire' => $expire, 'statut' => 'envoye', 'cree_le' => $now]);
+        $wpdb->insert($t, ['canal' => $canal, 'nom' => $nom, 'email' => $email, 'whatsapp' => $wa, 'pole' => $pole, 'source' => $source, 'consentement_le' => $now, 'token' => $token, 'token_expire' => $expire, 'statut' => 'envoye', 'cree_le' => $now]);
         $id = (int) $wpdb->insert_id;
     }
     $lien = gvb_plaquette_lien($token);
     if ($canal === 'email') {
-        $ok = gvb_mail($email, 'La plaquette du Groupe VITO S.', "Bonjour,\n\nMerci de votre intérêt pour le Groupe VITO S. Téléchargez notre plaquette (lien valable " . GVB_CONTACT_VALIDITE_JOURS . " jours) :\n$lien\n\nPour toute question, répondez à ce message ou écrivez à " . gvb_reglages()['email'] . ".\n\nGroupe VITO S.\n\nSe désinscrire : " . gvb_desinscription_lien($token));
+        $ok = gvb_mail($email, 'La plaquette du Groupe VITO S.', "Bonjour $nom,\n\nMerci de votre intérêt pour le Groupe VITO S. Téléchargez notre plaquette (lien valable " . GVB_CONTACT_VALIDITE_JOURS . " jours) :\n$lien\n\nPour toute question, répondez à ce message ou écrivez à " . gvb_reglages()['email'] . ".\n\nGroupe VITO S.\n\nSe désinscrire : " . gvb_desinscription_lien($token));
         $statut = $ok ? 'envoye' : 'echec';
     } else {
         $ok = apply_filters('gvb_whatsapp_envoyer', false, $wa, $lien);
@@ -166,7 +169,7 @@ function gvb_requete_contacts($f, $limite = 0) {
     global $wpdb;
     $where = ['1=1']; $args = [];
     foreach (['canal', 'pole', 'statut'] as $k) if ($f[$k] !== '') { $where[] = "$k = %s"; $args[] = $f[$k]; }
-    if ($f['q'] !== '') { $like = '%' . $wpdb->esc_like($f['q']) . '%'; $where[] = '(email LIKE %s OR whatsapp LIKE %s)'; array_push($args, $like, $like); }
+    if ($f['q'] !== '') { $like = '%' . $wpdb->esc_like($f['q']) . '%'; $where[] = '(email LIKE %s OR whatsapp LIKE %s OR nom LIKE %s)'; array_push($args, $like, $like, $like); }
     $sql = 'SELECT * FROM ' . gvb_table('contacts') . ' WHERE ' . implode(' AND ', $where) . ' ORDER BY id DESC' . ($limite ? ' LIMIT ' . (int) $limite : '');
     return $args ? $wpdb->get_results($wpdb->prepare($sql, $args)) : $wpdb->get_results($sql);
 }
@@ -185,12 +188,12 @@ function gvb_page_contacts() {
         }
         if (gvb_can('contacts', 'annuler') && $c->statut !== 'supprime') $actions .= gvb_form('gvb_contact_supprimer', 'gvb_contact_supprimer', ['id' => $c->id], 'class="gvb-inline" onsubmit="return confirm(\'Effacer les données de ce contact ?\')"') . gvb_bouton('Effacer', false) . '</form>';
         $perime = strtotime($c->cree_le) < strtotime('-' . GVB_CONSERVATION_MOIS . ' months');
-        $lignes[] = '<tr><td>' . esc_html(gvb_dt($c->cree_le)) . ($perime ? ' <span class="gvb-ko">À supprimer</span>' : '') . '</td><td>' . esc_html($c->canal === 'email' ? 'E-mail' : 'WhatsApp') . '</td><td>' . esc_html($contact ?: '—') . '</td><td>' . esc_html(GVB_POLES[$c->pole] ?? '—') . '</td><td>' . gvb_badge(in_array($c->statut, ['envoye', 'whatsapp_envoye'], true) ? 'validee' : ($c->statut === 'echec' ? 'incomplete' : ($c->statut === 'manuel' ? 'nouvelle' : 'annulee')), GVB_CONTACT_STATUTS[$c->statut] ?? $c->statut) . '</td><td>' . (int) $c->telechargements . '</td><td>' . $actions . '</td></tr>';
+        $lignes[] = '<tr><td>' . esc_html(gvb_dt($c->cree_le)) . ($perime ? ' <span class="gvb-ko">À supprimer</span>' : '') . '</td><td>' . esc_html($c->nom ?: '-') . '</td><td>' . esc_html($c->canal === 'email' ? 'E-mail' : 'WhatsApp') . '</td><td>' . esc_html($contact ?: '—') . '</td><td>' . esc_html(GVB_POLES[$c->pole] ?? '—') . '</td><td>' . gvb_badge(in_array($c->statut, ['envoye', 'whatsapp_envoye'], true) ? 'validee' : ($c->statut === 'echec' ? 'incomplete' : ($c->statut === 'manuel' ? 'nouvelle' : 'annulee')), GVB_CONTACT_STATUTS[$c->statut] ?? $c->statut) . '</td><td>' . (int) $c->telechargements . '</td><td>' . $actions . '</td></tr>';
     }
     $actions = gvb_can('contacts', 'exporter') ? '<a class="button" href="' . esc_url(wp_nonce_url(add_query_arg(array_merge(['action' => 'gvb_export_contacts'], array_filter($f)), admin_url('admin-post.php')), 'gvb_export_contacts')) . '">Exporter (CSV)</a>' : '';
     gvb_debut('Contacts — plaquette', 'utilisateurs', $actions);
     echo '<form method="get" class="gvb-filtres"><input type="hidden" name="page" value="gv-contacts">' . gvb_liste('canal', 'Canal', ['' => 'Tous', 'email' => 'E-mail', 'whatsapp' => 'WhatsApp'], $f['canal']) . gvb_liste('pole', 'Pôle', ['' => 'Tous'] + GVB_POLES, $f['pole']) . gvb_liste('statut', 'État', ['' => 'Tous'] + GVB_CONTACT_STATUTS, $f['statut']) . gvb_champ('q', 'Recherche', $f['q'], 'search') . gvb_bouton('Filtrer', false) . '</form>';
-    echo gvb_tableau(['Reçu le', 'Canal', 'Contact', 'Pôle', 'État', 'Téléch.', 'Actions'], $lignes, 'Aucun contact pour le moment.');
+    echo gvb_tableau(['Reçu le', 'Nom', 'Canal', 'Contact', 'Pôle', 'État', 'Téléch.', 'Actions'], $lignes, 'Aucun contact pour le moment.');
     if (($e = get_option('gvb_dernier_echec_mail')) && is_array($e)) echo '<div class="gvb-alerte"><strong>Dernier échec d’envoi (' . esc_html(gvb_dt($e['le'])) . ') :</strong> ' . esc_html($e['smtp']) . ' — ' . esc_html($e['message']) . '</div>';
     echo '<p class="gvb-rappel">Conservation : ' . GVB_CONSERVATION_MOIS . ' mois. ' . (is_file(gvb_plaquette_chemin()) ? 'Plaquette en place.' : '<strong class="gvb-ko">La plaquette n’est pas encore déposée sur le serveur.</strong>') . '</p>';
     gvb_fin();
@@ -206,7 +209,7 @@ add_action('admin_post_gvb_contact_marquer', function () {
 add_action('admin_post_gvb_contact_supprimer', function () {
     gvb_garde('contacts', 'annuler', 'gvb_contact_supprimer');
     global $wpdb; $id = absint($_POST['id'] ?? 0);
-    $wpdb->update(gvb_table('contacts'), ['email' => '', 'whatsapp' => '', 'token' => '', 'token_expire' => null, 'source' => '', 'statut' => 'supprime'], ['id' => $id]);
+    $wpdb->update(gvb_table('contacts'), ['email' => '', 'nom' => '', 'whatsapp' => '', 'token' => '', 'token_expire' => null, 'source' => '', 'statut' => 'supprime'], ['id' => $id]);
     gvb_log(0, 'Données d’un contact effacées', 'contact #' . $id);
     gvb_retour('gv-contacts', [], 'Données effacées.');
 });
@@ -216,8 +219,8 @@ add_action('admin_post_gvb_export_contacts', function () {
     nocache_headers();
     header('Content-Type: text/csv; charset=utf-8'); header('Content-Disposition: attachment; filename="contacts-' . gmdate('Ymd') . '.csv"');
     $o = fopen('php://output', 'w'); fwrite($o, "\xEF\xBB\xBF");
-    fputcsv($o, ['Reçu le', 'Canal', 'E-mail', 'WhatsApp', 'Pôle', 'État', 'Téléchargements', 'Consentement'], ';');
-    foreach (gvb_requete_contacts(gvb_filtres_contacts()) as $c) fputcsv($o, array_map($neutre, [$c->cree_le, $c->canal, $c->email, $c->whatsapp, GVB_POLES[$c->pole] ?? '', GVB_CONTACT_STATUTS[$c->statut] ?? $c->statut, $c->telechargements, $c->consentement_le]), ';');
+    fputcsv($o, ['Reçu le', 'Nom', 'Canal', 'E-mail', 'WhatsApp', 'Pôle', 'État', 'Téléchargements', 'Consentement'], ';');
+    foreach (gvb_requete_contacts(gvb_filtres_contacts()) as $c) fputcsv($o, array_map($neutre, [$c->cree_le, $c->nom, $c->canal, $c->email, $c->whatsapp, GVB_POLES[$c->pole] ?? '', GVB_CONTACT_STATUTS[$c->statut] ?? $c->statut, $c->telechargements, $c->consentement_le]), ';');
     gvb_log(0, 'Export des contacts');
     gvb_terminer();
 });
