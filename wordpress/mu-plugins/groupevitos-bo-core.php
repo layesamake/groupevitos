@@ -9,11 +9,13 @@
 if (!defined('ABSPATH')) exit;
 
 const GVB_DB_VERSION = '2';
-const GVB_ROLES_VERSION = '4';
+const GVB_ROLES_VERSION = '5';
 const GVB_POLES = ['universite' => 'Université', 'lycee' => 'Lycée', 'itp' => 'ITP'];
 const GVB_DOMAINES = ['admissions' => 'Admissions', 'inscriptions' => 'Inscriptions', 'etudiants' => 'Étudiants', 'contacts' => 'Contacts', 'publications' => 'Publications', 'candidatures' => 'Candidatures (CV)', 'parametres' => 'Réglages'];
 const GVB_ACTIONS = ['voir' => 'Consulter', 'creer' => 'Créer', 'modifier' => 'Modifier', 'valider' => 'Décider', 'annuler' => 'Annuler', 'exporter' => 'Exporter'];
-const GVB_PROFILS = ['gv_direction' => 'Direction', 'gv_scolarite' => 'Scolarité', 'gv_comptabilite' => 'Comptabilité', 'gv_responsable_pole' => 'Responsable de pôle'];
+const GVB_PROFILS = ['gv_direction' => 'Direction', 'gv_scolarite' => 'Scolarité', 'gv_comptabilite' => 'Comptabilité', 'gv_responsable_pole' => 'Responsable de pôle', 'gv_communication' => 'Chargé de communication'];
+const GVB_CAPS_ARTICLES = ['edit_posts', 'edit_others_posts', 'edit_published_posts', 'publish_posts', 'delete_posts', 'delete_published_posts', 'read_private_posts', 'upload_files'];
+const GVB_TYPES_PROTEGES = ['formation', 'tarif', 'dossier', 'coordonnee', 'partenaire', 'promotion'];
 const GVB_STATUTS = ['nouvelle' => 'Nouvelle', 'etude' => 'En étude', 'incomplete' => 'Dossier incomplet', 'attente' => 'Liste d’attente', 'acceptee' => 'Acceptée', 'refusee' => 'Refusée', 'inscrite' => 'Inscrite', 'abandonnee' => 'Abandonnée'];
 const GVB_COULEURS = ['nouvelle' => '#8A5A00', 'etude' => '#08065B', 'incomplete' => '#B42318', 'attente' => '#5A3E9B', 'acceptee' => '#007A2E', 'refusee' => '#9B1C1C', 'inscrite' => '#005F73', 'abandonnee' => '#6B7280', 'validee' => '#007A2E', 'annulee' => '#6B7280', 'en_cours' => '#08065B'];
 
@@ -32,12 +34,14 @@ function gvb_matrice() {
         'gv_scolarite' => ['admissions' => 'voir,creer,modifier,exporter', 'inscriptions' => 'voir,creer,modifier,exporter', 'contacts' => 'voir,modifier,exporter', 'publications' => 'voir,creer,annuler', 'etudiants' => 'voir,creer,modifier,exporter'],
         'gv_comptabilite' => ['admissions' => 'voir', 'inscriptions' => 'voir,exporter', 'etudiants' => 'voir,exporter'],
         'gv_responsable_pole' => ['admissions' => 'voir,creer,modifier,valider', 'inscriptions' => 'voir', 'etudiants' => 'voir'],
+        'gv_communication' => ['publications' => 'voir,creer,annuler', 'contacts' => 'voir,modifier'],
     ];
 }
 
 function gvb_caps_profil($role) {
     $caps = ['read' => true, 'gv_acces' => true];
     foreach (gvb_matrice()[$role] ?? [] as $domaine => $actions) foreach (explode(',', $actions) as $a) $caps["gv_{$domaine}_{$a}"] = true;
+    if ($role === 'gv_communication') foreach (GVB_CAPS_ARTICLES as $cap) $caps[$cap] = true;
     if ($role === 'gv_direction') {
         foreach (['list_users', 'create_users', 'edit_users', 'delete_users', 'promote_users', 'gv_site_publier'] as $cap) $caps[$cap] = true;
         foreach (['edit_candidatures', 'edit_others_candidatures', 'edit_published_candidatures', 'edit_private_candidatures', 'read_private_candidatures', 'delete_candidatures', 'delete_others_candidatures', 'delete_published_candidatures', 'delete_private_candidatures', 'publish_candidatures'] as $cap) $caps[$cap] = true;
@@ -51,6 +55,7 @@ function gvb_synchroniser_roles() {
         if (!$role) continue;
         $voulues = gvb_caps_profil($slug);
         foreach (array_keys($role->capabilities) as $cap) if ((str_starts_with($cap, 'gv_') || str_ends_with($cap, '_candidatures') || $cap === 'edit_candidatures') && !isset($voulues[$cap])) $role->remove_cap($cap);
+        foreach (GVB_CAPS_ARTICLES as $cap) if (!isset($voulues[$cap]) && !empty($role->capabilities[$cap])) $role->remove_cap($cap);
         foreach ($voulues as $cap => $_) if (empty($role->capabilities[$cap])) $role->add_cap($cap);
     }
     if ($admin = get_role('administrator')) {
@@ -93,6 +98,30 @@ add_filter('map_meta_cap', function ($caps, $cap, $user_id, $args) {
     }
     return $caps;
 }, 10, 4);
+
+// Le chargé de communication gère les articles et les publications, jamais le contenu de référence du site
+function gvb_est_communication($user_id) {
+    $u = get_userdata((int) $user_id);
+    return $u && in_array('gv_communication', (array) $u->roles, true) && !user_can($u, 'manage_options');
+}
+add_filter('map_meta_cap', function ($caps, $cap, $user_id, $args) {
+    if (in_array($cap, ['edit_post', 'delete_post', 'read_post', 'publish_post'], true) && !empty($args[0]) && gvb_est_communication($user_id)) {
+        $type = get_post_type((int) $args[0]);
+        if ($type && ($type === 'page' || in_array($type, GVB_TYPES_PROTEGES, true))) return ['do_not_allow'];
+    }
+    return $caps;
+}, 11, 4);
+// Création bloquée aussi par l'API (REST) et par tout appel direct à wp_insert_post
+add_filter('wp_insert_post_empty_content', function ($vide, $postarr) {
+    if (!$vide && gvb_est_communication(get_current_user_id())) { $type = $postarr['post_type'] ?? 'post'; if ($type === 'page' || in_array($type, GVB_TYPES_PROTEGES, true)) return true; }
+    return $vide;
+}, 10, 2);
+add_action('admin_init', function () {
+    global $pagenow;
+    if (!in_array($pagenow, ['post-new.php', 'edit.php', 'post.php'], true) || !gvb_est_communication(get_current_user_id())) return;
+    $type = isset($_GET['post_type']) ? sanitize_key($_GET['post_type']) : (isset($_GET['post']) ? (string) get_post_type(absint($_GET['post'])) : 'post');
+    if ($type === 'page' || in_array($type, GVB_TYPES_PROTEGES, true)) wp_die('Vous gérez les actualités et les publications. Ce contenu est géré par la Direction.', 'Accès refusé', ['response' => 403, 'back_link' => false]);
+});
 
 // Pôle d'un responsable : champ du profil utilisateur (modifiable par la Direction)
 add_action('show_user_profile', 'gvb_champ_pole');
@@ -349,7 +378,11 @@ add_action('admin_menu', function () {
 add_action('admin_menu', function () {
     if (current_user_can('manage_options')) return;
     global $menu;
-    foreach ($menu as $item) if (!empty($item[2]) && !in_array($item[2], ['gv', 'profile.php', 'edit.php?post_type=candidature'], true) && !str_starts_with((string) ($item[4] ?? ''), 'wp-menu-separator')) remove_menu_page($item[2]);
+    $permis = ['gv', 'profile.php', 'edit.php?post_type=candidature'];
+    if (gvb_est_communication(get_current_user_id())) $permis = ['gv', 'profile.php', 'edit.php', 'upload.php'];
+    foreach ($menu as $item) if (!empty($item[2]) && !in_array($item[2], $permis, true) && !str_starts_with((string) ($item[4] ?? ''), 'wp-menu-separator')) remove_menu_page($item[2]);
+    foreach ($menu as $i => $item) if (($item[2] ?? '') === 'edit.php') $menu[$i][0] = 'Actualités';
+    foreach ($menu as $i => $item) if (($item[2] ?? '') === 'upload.php') $menu[$i][0] = 'Médias';
 }, 9998);
 
 add_action('admin_init', function () {
@@ -394,7 +427,7 @@ add_action('admin_head', function () {
 #adminmenuback,#adminmenuwrap,#adminmenu{background:#08065B}#adminmenu a{color:#E1E7FA}#adminmenu li.menu-top:hover,#adminmenu li.opensub>a.menu-top{background:#1B1A7A;color:#fff}
 #adminmenu .wp-has-current-submenu .wp-submenu,#adminmenu .wp-submenu{background:#1B1A7A}#adminmenu .wp-submenu li.current a{box-shadow:inset 4px 0 0 #FFC23D}#adminmenu .gvb-mi svg{color:#FFC23D}#adminmenu li.current a.menu-top,#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,#adminmenu .wp-submenu li.current a{background:#1F4FFF;color:#fff;font-weight:600}
 #adminmenu .wp-submenu a{color:#C9D3F5}#adminmenu .wp-submenu a:hover{color:#fff;background:#2A2995}#adminmenu li.gvb-cache,#adminmenu li:has(> a[href$="page=gv-demande"]),#adminmenu li:has(> a[href$="page=gv-inscription"]){display:none}
-#adminmenu .gvb-mi{display:inline-flex;vertical-align:-3px;margin-right:8px}#wpadminbar{background:#08065B}#wpadminbar .ab-item,#wpadminbar a.ab-item{color:#E1E7FA}#adminmenu #menu-posts::before{content:"Maintenance et contenus du site";display:block;padding:14px 12px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9FB0EA}
+#adminmenu .gvb-mi{display:inline-flex;vertical-align:-3px;margin-right:8px}#wpadminbar{background:#08065B}#wpadminbar .ab-item,#wpadminbar a.ab-item{color:#E1E7FA}#adminmenu #menu-posts::before{content:"Actualités du site";display:block;padding:14px 12px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9FB0EA}
 .gvb{max-width:1280px;--ink:#08065B;--blue:#1F4FFF;--vert:#007A2E;--ligne:#D6DCEB;--fond:#F2F4F9;--muted:#4A5578;color:#111827}
 .gvb-entete{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 14px}.gvb-entete h1{display:flex;align-items:center;gap:10px;margin:0;padding:0;font-size:26px;color:var(--ink);font-weight:800}
 .gvb-titre-icone{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--ink);color:#FFC23D;box-shadow:0 3px 0 #FFC23D}.gvb-entete-actions{display:flex;flex-wrap:wrap;gap:8px}

@@ -144,6 +144,7 @@ function gvb_page_tableau() {
     if (!current_user_can('gv_acces')) wp_die('Accès refusé.', 'Accès refusé', ['response' => 403, 'back_link' => false]);
     $u = wp_get_current_user();
     gvb_debut('Bonjour ' . $u->display_name, 'tableau');
+    if (!gvb_can('admissions', 'voir') && gvb_can('publications', 'voir')) { gvb_tableau_communication(); gvb_fin(); return; }
     if (!gvb_can('admissions', 'voir')) { echo '<div class="gvb-boite"><p>Aucun module ne vous est encore attribué. Contactez la Direction.</p></div>'; gvb_fin(); return; }
     $k = gvb_indicateurs(); $s = $k['statuts'];
     $pole = gvb_pole_utilisateur();
@@ -163,6 +164,22 @@ function gvb_page_tableau() {
     foreach (gvb_requete_demandes(['annee' => '', 'pole' => '', 'statut' => '', 'q' => ''], 8) as $d) $recent[] = '<tr><td><a href="' . esc_url(gvb_url('gv-demande', ['id' => $d->id])) . '">' . esc_html($d->code) . '</a></td><td>' . esc_html($d->prenom . ' ' . $d->nom) . '</td><td>' . esc_html(GVB_POLES[$d->pole] ?? '') . '</td><td>' . gvb_badge($d->statut) . '</td></tr>';
     echo '<div class="gvb-boite"><h2>' . gvb_icone('liste', 18) . 'Dernières demandes</h2>' . gvb_tableau(['Code', 'Candidat', 'Pôle', 'Statut'], $recent, 'Aucune demande pour le moment.') . '</div>';
     gvb_fin();
+}
+
+function gvb_tableau_communication() {
+    global $wpdb;
+    $t = gvb_table('publications');
+    $prog = (int) $wpdb->get_var("SELECT COUNT(*) FROM $t WHERE statut = 'programmee'");
+    $pub = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $t WHERE statut = 'publiee' AND cree_le > %s", gmdate('Y-m-d H:i:s', time() - 30 * DAY_IN_SECONDS)));
+    $echec = (int) $wpdb->get_var("SELECT COUNT(*) FROM $t WHERE statut = 'echec' AND cree_le > '" . gmdate('Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS) . "'");
+    $articles = (int) wp_count_posts('post')->publish;
+    echo '<div class="gvb-cartes">'
+        . gvb_carte('Publications programmées', $prog, 'À venir sur Facebook', 'horloge', '', gvb_url('gv-publications'))
+        . gvb_carte('Publiées (30 jours)', $pub, 'Sur la page Facebook', 'rapport', 'ok', gvb_url('gv-publications'))
+        . gvb_carte('Échecs (7 jours)', $echec, 'À reprendre', 'alerte', $echec ? 'attention' : '', gvb_url('gv-publications'))
+        . gvb_carte('Actualités en ligne', $articles, 'Articles publiés sur le site', 'journal', '', admin_url('edit.php'))
+        . (gvb_can('contacts', 'voir') ? gvb_carte('Contacts plaquette (7 jours)', (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM ' . gvb_table('contacts') . ' WHERE cree_le > %s', gmdate('Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS))), 'Visiteurs ayant demandé la plaquette', 'utilisateurs', '', gvb_url('gv-contacts')) : '')
+        . '</div><div class="gvb-boite"><h2>' . gvb_icone('plus', 18) . 'Raccourcis</h2><p class="gvb-actions"><a class="button button-primary" href="' . esc_url(gvb_url('gv-publications')) . '">Nouvelle publication Facebook</a> <a class="button" href="' . esc_url(admin_url('post-new.php')) . '">Nouvel article</a> <a class="button" href="' . esc_url(admin_url('edit.php')) . '">Toutes les actualités</a></p></div>';
 }
 
 // ── Réglages ──────────────────────────────────────────────────────────────────
