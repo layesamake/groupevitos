@@ -8,10 +8,10 @@
 
 if (!defined('ABSPATH')) exit;
 
-const GVB_DB_VERSION = '1';
-const GVB_ROLES_VERSION = '3';
+const GVB_DB_VERSION = '2';
+const GVB_ROLES_VERSION = '4';
 const GVB_POLES = ['universite' => 'Université', 'lycee' => 'Lycée', 'itp' => 'ITP'];
-const GVB_DOMAINES = ['admissions' => 'Admissions', 'inscriptions' => 'Inscriptions', 'contacts' => 'Contacts', 'publications' => 'Publications', 'candidatures' => 'Candidatures (CV)', 'parametres' => 'Réglages'];
+const GVB_DOMAINES = ['admissions' => 'Admissions', 'inscriptions' => 'Inscriptions', 'etudiants' => 'Étudiants', 'contacts' => 'Contacts', 'publications' => 'Publications', 'candidatures' => 'Candidatures (CV)', 'parametres' => 'Réglages'];
 const GVB_ACTIONS = ['voir' => 'Consulter', 'creer' => 'Créer', 'modifier' => 'Modifier', 'valider' => 'Décider', 'annuler' => 'Annuler', 'exporter' => 'Exporter'];
 const GVB_PROFILS = ['gv_direction' => 'Direction', 'gv_scolarite' => 'Scolarité', 'gv_comptabilite' => 'Comptabilité', 'gv_responsable_pole' => 'Responsable de pôle'];
 const GVB_STATUTS = ['nouvelle' => 'Nouvelle', 'etude' => 'En étude', 'incomplete' => 'Dossier incomplet', 'attente' => 'Liste d’attente', 'acceptee' => 'Acceptée', 'refusee' => 'Refusée', 'inscrite' => 'Inscrite', 'abandonnee' => 'Abandonnée'];
@@ -29,9 +29,9 @@ function gvb_matrice() {
     $tout = 'voir,creer,modifier,valider,annuler,exporter';
     return [
         'gv_direction' => array_fill_keys(array_keys(GVB_DOMAINES), $tout),
-        'gv_scolarite' => ['admissions' => 'voir,creer,modifier,exporter', 'inscriptions' => 'voir,creer,modifier,exporter', 'contacts' => 'voir,modifier,exporter', 'publications' => 'voir,creer,annuler'],
-        'gv_comptabilite' => ['admissions' => 'voir', 'inscriptions' => 'voir,exporter'],
-        'gv_responsable_pole' => ['admissions' => 'voir,creer,modifier,valider', 'inscriptions' => 'voir'],
+        'gv_scolarite' => ['admissions' => 'voir,creer,modifier,exporter', 'inscriptions' => 'voir,creer,modifier,exporter', 'contacts' => 'voir,modifier,exporter', 'publications' => 'voir,creer,annuler', 'etudiants' => 'voir,creer,modifier,exporter'],
+        'gv_comptabilite' => ['admissions' => 'voir', 'inscriptions' => 'voir,exporter', 'etudiants' => 'voir,exporter'],
+        'gv_responsable_pole' => ['admissions' => 'voir,creer,modifier,valider', 'inscriptions' => 'voir', 'etudiants' => 'voir'],
     ];
 }
 
@@ -165,6 +165,7 @@ add_action('init', function () {
     dbDelta('CREATE TABLE ' . gvb_table('inscriptions') . " (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   demande_id bigint(20) unsigned NOT NULL,
+  etudiant_id bigint(20) unsigned NOT NULL DEFAULT 0,
   matricule varchar(24) NOT NULL DEFAULT '',
   pole varchar(12) NOT NULL DEFAULT 'universite',
   annee varchar(12) NOT NULL DEFAULT '',
@@ -180,6 +181,35 @@ add_action('init', function () {
   KEY demande_id (demande_id),
   KEY matricule (matricule),
   KEY pole_annee (pole,annee)
+) $c;");
+    dbDelta('CREATE TABLE ' . gvb_table('etudiants') . " (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  matricule varchar(24) NOT NULL DEFAULT '',
+  demande_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  pole varchar(12) NOT NULL DEFAULT 'universite',
+  annee varchar(12) NOT NULL DEFAULT '',
+  niveau varchar(40) NOT NULL DEFAULT '',
+  formation_id bigint(20) unsigned NOT NULL DEFAULT 0,
+  nom varchar(120) NOT NULL DEFAULT '',
+  prenom varchar(120) NOT NULL DEFAULT '',
+  naissance date NULL,
+  sexe varchar(1) NOT NULL DEFAULT '',
+  nationalite varchar(60) NOT NULL DEFAULT '',
+  telephone varchar(50) NOT NULL DEFAULT '',
+  email varchar(190) NOT NULL DEFAULT '',
+  adresse varchar(255) NOT NULL DEFAULT '',
+  parent_nom varchar(160) NOT NULL DEFAULT '',
+  parent_telephone varchar(50) NOT NULL DEFAULT '',
+  parent_email varchar(190) NOT NULL DEFAULT '',
+  statut varchar(12) NOT NULL DEFAULT 'actif',
+  motif varchar(255) NOT NULL DEFAULT '',
+  cree_le datetime NOT NULL,
+  modifie_le datetime NOT NULL,
+  PRIMARY KEY  (id),
+  UNIQUE KEY matricule (matricule),
+  KEY demande_id (demande_id),
+  KEY pole_statut (pole,statut),
+  KEY nom (nom)
 ) $c;");
     dbDelta('CREATE TABLE ' . gvb_table('historique') . " (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -249,7 +279,7 @@ const GVB_ICONES = [
     'plus' => 'M12 5v14M5 12h14', 'tableau' => 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z', 'admission' => 'M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6',
     'inscription' => 'M4 20V8l8-5 8 5v12M9 20v-6h6v6', 'cv' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21c0-4 4-6 8-6s8 2 8 6', 'reglage' => 'M4 8h10M18 8h2M4 16h2M10 16h10M14 5v6M6 13v6',
     'print' => 'M7 8V3h10v5M5 8h14v8H5zM7 14h10v7H7z', 'utilisateurs' => 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M3 20c0-3 3-5 6-5s6 2 6 5M17 11a2.5 2.5 0 1 0 0-5M17 15c2.5 0 4 1.5 4 4',
-    'pole' => 'M2 8l10-5 10 5-10 5zM6 10v5c3 2.5 9 2.5 12 0v-5', 'alerte' => 'M12 3l10 18H2zM12 10v5M12 18h.01', 'rapport' => 'M5 20V10M12 20V4M19 20v-7', 'check' => 'M5 12.5l4.5 4.5L19 7', 'croix' => 'M6 6l12 12M18 6L6 18', 'horloge' => 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2', 'dossier' => 'M3 6h6l2 2h10v11H3z', 'etoile' => 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z', 'liste' => 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01', 'journal' => 'M6 3h12v18H6zM9 8h6M9 12h6M9 16h4',
+    'pole' => 'M2 8l10-5 10 5-10 5zM6 10v5c3 2.5 9 2.5 12 0v-5', 'alerte' => 'M12 3l10 18H2zM12 10v5M12 18h.01', 'rapport' => 'M5 20V10M12 20V4M19 20v-7', 'check' => 'M5 12.5l4.5 4.5L19 7', 'croix' => 'M6 6l12 12M18 6L6 18', 'horloge' => 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2', 'dossier' => 'M3 6h6l2 2h10v11H3z', 'carte' => 'M3 6h18v12H3zM7 10h4M7 14h6M16 10h2v4h-2z', 'etoile' => 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z', 'liste' => 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01', 'journal' => 'M6 3h12v18H6zM9 8h6M9 12h6M9 16h4',
 ];
 function gvb_icone($nom, $taille = 18) {
     return '<svg class="gvb-i" width="' . (int) $taille . '" height="' . (int) $taille . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="' . esc_attr(GVB_ICONES[$nom] ?? GVB_ICONES['admission']) . '"/></svg>';
@@ -299,13 +329,13 @@ function gvb_debut($titre, $icone = '', $actions = '') {
 function gvb_fin() { echo '</div>'; }
 
 // ── Menu GROUPE VITOS ─────────────────────────────────────────────────────────
-const GVB_PAGES_CACHEES = ['gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription']];
+const GVB_PAGES_CACHEES = ['gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant']];
 
 add_action('admin_menu', function () {
     add_menu_page('GROUPE VITOS', 'GROUPE VITOS', 'gv_acces', 'gv', 'gvb_page_tableau', 'dashicons-welcome-learn-more', 2);
     foreach ([
         ['Tableau de bord', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau'], ['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission'],
-        ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs'], ['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport'], ['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage'],
+        ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs'], ['Étudiants', 'gv-etudiants', 'gv_etudiants_voir', 'gvb_page_etudiants', 'pole'], ['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport'], ['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage'],
     ] as [$titre, $slug, $cap, $cb, $icone]) add_submenu_page('gv', $titre, '<span class="gvb-mi">' . gvb_icone($icone, 16) . '</span>' . esc_html($titre), $cap, $slug, $cb);
     add_submenu_page('gv', 'Candidatures (CV)', '<span class="gvb-mi">' . gvb_icone('cv', 16) . '</span>Candidatures (CV)', 'edit_candidatures', 'edit.php?post_type=candidature');
     add_submenu_page('gv', 'Utilisateurs', '<span class="gvb-mi">' . gvb_icone('utilisateurs', 16) . '</span>Utilisateurs', 'list_users', 'users.php');

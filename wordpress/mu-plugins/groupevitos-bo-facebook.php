@@ -163,6 +163,37 @@ add_action('admin_post_gvb_fb_annuler', function () {
     gvb_retour('gv-publications', [], 'Publication annulée.');
 });
 
+// ── Préremplir depuis une formation ou une actualité du site ───────────────────
+function gvb_fb_extrait($post, $max = 220) {
+    $t = trim(wp_strip_all_tags($post->post_excerpt !== '' ? $post->post_excerpt : strip_shortcodes($post->post_content)));
+    $t = preg_replace('/\s+/u', ' ', html_entity_decode($t, ENT_QUOTES, 'UTF-8'));
+    if (mb_strlen($t) <= $max) return $t;
+    $c = mb_substr($t, 0, $max); $pos = mb_strrpos($c, ' ');
+    return rtrim(mb_substr($c, 0, $pos ?: $max), " ,;:.") . '…';
+}
+function gvb_fb_depuis_source($source) {
+    if (!preg_match('/^(formation|post):(\d+)$/', (string) $source, $m)) return null;
+    $p = get_post((int) $m[2]);
+    if (!$p || $p->post_type !== $m[1] || $p->post_status !== 'publish') return null;
+    $titre = html_entity_decode(wp_strip_all_tags($p->post_title), ENT_QUOTES, 'UTF-8');
+    $extrait = gvb_fb_extrait($p);
+    if ($p->post_type === 'formation') {
+        $lien = 'https://groupevitos.com/formations/' . $p->post_name . '/';
+        $dipl = trim((string) get_post_meta($p->ID, 'diplomes', true));
+        $texte = "🎓 " . $titre . ($dipl !== '' ? ' (' . trim(wp_strip_all_tags($dipl)) . ')' : '') . "\n\n" . $extrait . "\n\nDécouvrez la formation, les conditions d’admission et les frais : " . $lien . "\n\n#GroupeVITOS #Formation";
+    } else {
+        $lien = 'https://groupevitos.com/actualites/' . $p->post_name . '/';
+        $texte = "📰 " . $titre . "\n\n" . $extrait . "\n\nLire la suite : " . $lien . "\n\n#GroupeVITOS";
+    }
+    return ['texte' => $texte, 'lien' => $lien, 'titre' => $titre];
+}
+function gvb_fb_lien_source($post) { return gvb_url('gv-publications', ['source' => $post->post_type . ':' . $post->ID]); }
+// Raccourci « Publier sur Facebook » dans les listes d'administration WordPress (formations et articles)
+add_filter('post_row_actions', function ($actions, $post) {
+    if (in_array($post->post_type, ['formation', 'post'], true) && $post->post_status === 'publish' && current_user_can('gv_publications_creer')) $actions['gvb_fb'] = '<a href="' . esc_url(gvb_fb_lien_source($post)) . '">Publier sur Facebook</a>';
+    return $actions;
+}, 10, 2);
+
 // ── Écran ─────────────────────────────────────────────────────────────────────
 function gvb_page_publications() {
     gvb_exiger('publications', 'voir');
@@ -173,6 +204,13 @@ function gvb_page_publications() {
     if (gvb_can('publications', 'creer')) {
         $texte = isset($_GET['texte']) ? sanitize_textarea_field(wp_unslash($_GET['texte'])) : '';
         $lien = isset($_GET['lien']) ? esc_url(wp_unslash($_GET['lien'])) : '';
+        $src = !empty($_GET['source']) ? gvb_fb_depuis_source(sanitize_text_field(wp_unslash($_GET['source']))) : null;
+        if ($src) { $texte = $src['texte']; $lien = $src['lien']; }
+        $options = ['' => '— Choisir une formation ou une actualité —'];
+        foreach (get_posts(['post_type' => 'formation', 'post_status' => 'publish', 'numberposts' => 100, 'orderby' => 'title', 'order' => 'ASC']) as $f) $options['formation:' . $f->ID] = 'Formation : ' . wp_strip_all_tags($f->post_title);
+        foreach (get_posts(['post_type' => 'post', 'post_status' => 'publish', 'numberposts' => 30]) as $a) $options['post:' . $a->ID] = 'Actualité : ' . wp_strip_all_tags($a->post_title);
+        echo '<div class="gvb-boite"><h2>' . gvb_icone('liste', 18) . 'Partir d’un contenu du site</h2><form method="get" class="gvb-filtres"><input type="hidden" name="page" value="gv-publications">'
+            . gvb_liste('source', 'Formation ou actualité', $options, $src ? sanitize_text_field(wp_unslash($_GET['source'])) : '') . gvb_bouton('Préremplir', false) . '</form>' . ($src ? '<p class="gvb-ok">Texte et lien préremplis depuis « ' . esc_html($src['titre']) . ' » : relisez et modifiez avant de publier.</p>' : '<p class="gvb-rappel">Le texte et le lien sont proposés automatiquement, vous les modifiez ensuite.</p>') . '</div>';
         echo '<div class="gvb-boite"><h2>' . gvb_icone('plus', 18) . 'Nouvelle publication</h2>' . gvb_form('gvb_fb_publier', 'gvb_fb_publier', [], 'enctype="multipart/form-data"')
             . gvb_zone('texte', 'Texte de la publication', $texte, 6) . gvb_champ('lien', 'Lien (facultatif, https://…)', $lien, 'url', 'maxlength="500"')
             . '<label class="gvb-champ"><span>Photos JPG ou PNG (facultatif, ' . GVB_FB_IMAGES_MAX . ' maximum, 8 Mo chacune)</span><input type="file" name="images[]" accept="image/jpeg,image/png" multiple></label>'

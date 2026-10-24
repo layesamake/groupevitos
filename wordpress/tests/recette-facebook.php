@@ -84,6 +84,24 @@ $_FILES = ['images' => ['name' => ['x.php'], 'type' => ['image/png'], 'tmp_name'
 $r = $envoyer('gvb_fb_publier', 'gvb_fb_publier', ['texte' => 'Piège', 'confirme' => '1']); $t('script déguisé en image : refusé', str_contains(urldecode($r), 'JPG et PNG'), $r);
 $_FILES = [];
 
+$lignes[] = "\n## Contenus du site";
+register_post_type('formation', ['public' => true, 'supports' => ['title', 'editor', 'excerpt', 'custom-fields']]);
+$fid = wp_insert_post(['post_type' => 'formation', 'post_status' => 'publish', 'post_title' => 'Gestion de projets', 'post_name' => 'gestion-de-projets', 'post_content' => '<p>Former des cadres capables de piloter des projets de développement durable.</p>']);
+update_post_meta($fid, 'diplomes', 'Licence, Master');
+$aid = wp_insert_post(['post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'Rentrée 2026', 'post_name' => 'rentree-2026', 'post_excerpt' => 'Les inscriptions se poursuivent.']);
+$brouillon = wp_insert_post(['post_type' => 'formation', 'post_status' => 'draft', 'post_title' => 'Brouillon']);
+$s = gvb_fb_depuis_source('formation:' . $fid);
+$t('formation : texte et lien générés', $s && $s['lien'] === 'https://groupevitos.com/formations/gestion-de-projets/' && str_contains($s['texte'], 'Gestion de projets') && str_contains($s['texte'], 'Licence, Master') && str_contains($s['texte'], 'piloter des projets'), json_encode($s));
+$s = gvb_fb_depuis_source('post:' . $aid);
+$t('actualité : texte et lien générés', $s && $s['lien'] === 'https://groupevitos.com/actualites/rentree-2026/' && str_contains($s['texte'], 'Les inscriptions se poursuivent'), json_encode($s));
+$t('brouillon ou source invalide : refusé', gvb_fb_depuis_source('formation:' . $brouillon) === null && gvb_fb_depuis_source('page:1') === null && gvb_fb_depuis_source('formation:abc') === null && gvb_fb_depuis_source('post:' . $fid) === null);
+$_GET = ['source' => 'formation:' . $fid]; ob_start(); gvb_page_publications(); $h = ob_get_clean();
+$t('écran Publications : préremplissage et liste de choix', str_contains($h, 'Formation : Gestion de projets') && str_contains($h, 'Actualité : Rentrée 2026') && str_contains($h, 'préremplis'));
+$post = get_post($fid); $acts = apply_filters('post_row_actions', [], $post);
+$t('raccourci « Publier sur Facebook » dans la liste WordPress', isset($acts['gvb_fb']) && str_contains($acts['gvb_fb'], 'source=formation'));
+wp_set_current_user($cpt); $t('raccourci absent pour la Comptabilité', !isset(apply_filters('post_row_actions', [], $post)['gvb_fb']));
+wp_set_current_user($dir); $_GET = [];
+
 $lignes[] = "\n## Échecs et annulation";
 update_option('gvb_facebook', ['page_id' => '1376716678856765', 'jeton' => 'JETON-MAUVAIS', 'actif' => 1], false);
 $r = $envoyer('gvb_fb_publier', 'gvb_fb_publier', ['texte' => 'Avec mauvais jeton', 'confirme' => '1']); $p5 = $wpdb->get_row("SELECT * FROM $T ORDER BY id DESC LIMIT 1");

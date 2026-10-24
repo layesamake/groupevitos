@@ -21,12 +21,17 @@ function gvb_inscrire($id, $frais_inscription, $frais_scolarite, $derogation = '
         if ($manque && $derogation === '') return new WP_Error('pieces', 'Des pièces manquent : indiquez le motif de la dérogation.');
         if ($frais_inscription < 0 || $frais_scolarite < 0) return new WP_Error('frais', 'Montants invalides.');
         $annee4 = substr(preg_replace('/\D/', '', $d->annee), 0, 4);
-        $n = gvb_sequence('mat_' . $d->pole . '_' . $annee4);
-        $matricule = gvb_prefixe_pole($d->pole) . '-' . $annee4 . '-' . str_pad((string) $n, 4, '0', STR_PAD_LEFT);
+        $matricule = (string) apply_filters('gvb_matricule_existant', '', (int) $id);
+        if ($matricule === '') {
+            $n = gvb_sequence('mat_' . $d->pole . '_' . $annee4);
+            $matricule = gvb_prefixe_pole($d->pole) . '-' . $annee4 . '-' . str_pad((string) $n, 4, '0', STR_PAD_LEFT);
+        }
         $now = gvb_now();
         $wpdb->insert(gvb_table('inscriptions'), ['demande_id' => $id, 'matricule' => $matricule, 'pole' => $d->pole, 'annee' => $d->annee, 'niveau' => $d->niveau, 'formation_id' => $d->formation_id,
             'frais' => wp_json_encode(['inscription' => (int) $frais_inscription, 'scolarite' => (int) $frais_scolarite]), 'derogation' => $derogation, 'statut' => 'validee', 'inscrit_le' => $now, 'inscrit_par' => get_current_user_id()]);
+        $ins_id = (int) $wpdb->insert_id;
         $wpdb->update(gvb_table('demandes'), ['statut' => 'inscrite', 'modifie_le' => $now], ['id' => $id]);
+        do_action('gvb_inscription_creee', $ins_id, $d, $matricule);
         gvb_log($id, 'Inscription validée', $matricule . ($derogation ? ' — dérogation : ' . $derogation : ''));
         return $matricule;
     } finally {
@@ -51,6 +56,7 @@ add_action('admin_post_gvb_inscription_annuler', function () {
     if ($motif === '') gvb_retour('gv-inscriptions', [], null, 'Le motif d’annulation est obligatoire.');
     $wpdb->update(gvb_table('inscriptions'), ['statut' => 'annulee', 'motif_annulation' => $motif], ['id' => $ins->id]);
     $wpdb->update(gvb_table('demandes'), ['statut' => 'acceptee', 'modifie_le' => gvb_now()], ['id' => $ins->demande_id]);
+    do_action('gvb_inscription_annulee', $ins, $motif);
     gvb_log($ins->demande_id, 'Inscription annulée', $ins->matricule . ' — ' . $motif);
     gvb_retour('gv-inscriptions', [], 'Inscription annulée ; la demande revient à « Acceptée ».');
 });
@@ -147,6 +153,7 @@ function gvb_page_tableau() {
         . gvb_carte('Dossiers incomplets', $s['incomplete'], 'Pièces à relancer', 'alerte', $s['incomplete'] ? 'attention' : '', gvb_url('gv-admissions', ['statut' => 'incomplete', 'annee' => $k['annee']]))
         . gvb_carte('Acceptées à inscrire', $s['acceptee'], 'Prêtes pour l’inscription', 'inscription', '', gvb_url('gv-admissions', ['statut' => 'acceptee', 'annee' => $k['annee']]))
         . gvb_carte('Inscrits', $k['inscrits'], 'Année ' . $k['annee'], 'pole', 'ok', gvb_url('gv-inscriptions', ['annee' => $k['annee']]))
+        . (gvb_can('etudiants', 'voir') ? gvb_carte('Étudiants actifs', gvb_nb_etudiants_actifs(), 'Tous niveaux', 'carte', '', gvb_url('gv-etudiants', ['statut' => 'actif'])) : '')
         . gvb_carte('Doublons probables', $k['doublons'], 'À vérifier', 'utilisateurs', $k['doublons'] ? 'attention' : '') . '</div>';
     if (gvb_can('contacts', 'voir')) { global $wpdb; echo '<div class="gvb-cartes">' . gvb_carte('Contacts plaquette (7 jours)', (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM ' . gvb_table('contacts') . ' WHERE cree_le > %s', gmdate('Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS))), 'Visiteurs ayant demandé la plaquette', 'utilisateurs', '', gvb_url('gv-contacts')) . '</div>'; }
     $lignes = [];

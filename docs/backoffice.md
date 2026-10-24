@@ -24,3 +24,8 @@ Nouvelle → En étude → (Dossier incomplet / Liste d'attente) → Acceptée /
 
 ## À valider par la Direction
 Liste des pièces par pôle (`GVB_PIECES`), durée de conservation des demandes, montants des frais (saisis à l'inscription en attendant le module Scolarité et finances), e-mail d'alerte (Réglages).
+
+## Modules ajoutés ensuite
+- **Contacts (plaquette)** : demandes de plaquette par e-mail (Brevo) ou WhatsApp ; l'équipe envoie WhatsApp avec le bouton de l'écran Contacts.
+- **Publications Facebook** : texte, lien, photos, programmation, historique ; préremplissage depuis une formation ou une actualité (écran Publications ou lien « Publier sur Facebook » dans les listes WordPress). Le jeton de la page est saisi dans Réglages et jamais réaffiché.
+- **Étudiants et élèves** : fiche créée à l'inscription (matricule permanent), statuts (actif, suspendu, diplômé, abandon, transféré, inactif), réinscription annuelle, parcours, export CSV. Une inscription annulée rend l'étudiant « inactif » ; une nouvelle inscription du même dossier le réactive avec le même matricule.
