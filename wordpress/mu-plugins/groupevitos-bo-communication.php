@@ -94,7 +94,8 @@ function gvb_notifs_traiter($limite = 10) {
     foreach ($wpdb->get_results($wpdb->prepare("SELECT * FROM $t WHERE statut = 'attente' ORDER BY id LIMIT %d", (int) $limite)) as $n) {
         if ($aujourdhui + $envoyes >= GVB_NOTIFS_PAR_JOUR) break;
         if (gvb_est_desinscrit($n->email)) { $wpdb->update($t, ['statut' => 'ignore', 'erreur' => 'Désinscrit'], ['id' => $n->id]); continue; }
-        $ok = gvb_mail($n->email, $n->sujet, $n->corps . "\n\n—\nGroupe VITO S.\nSe désabonner de ces messages : " . gvb_desabonnement_lien($n->email));
+        $pied = $n->type === 'resume' ? "\n\n—\nGroupe VITO S. · résumé automatique. Modifier ou arrêter ces e-mails : " . gvb_url('gv-preferences') : "\n\n—\nGroupe VITO S.\nSe désabonner de ces messages : " . gvb_desabonnement_lien($n->email);
+        $ok = gvb_mail($n->email, $n->sujet, $n->corps . $pied);
         if ($ok) { $wpdb->update($t, ['statut' => 'envoye', 'envoye_le' => gvb_now(), 'tentatives' => $n->tentatives + 1, 'erreur' => ''], ['id' => $n->id]); $envoyes++; }
         else $wpdb->update($t, ['statut' => $n->tentatives + 1 >= 3 ? 'echec' : 'attente', 'tentatives' => $n->tentatives + 1, 'erreur' => 'Envoi refusé'], ['id' => $n->id]);
     }

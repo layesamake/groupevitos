@@ -183,6 +183,7 @@ function gvb_page_tableau() {
     $u = wp_get_current_user(); $profil = gvb_profil_utilisateur($u); $pole = gvb_pole_utilisateur(); $cat = gvb_blocs_catalogue();
     gvb_debut('Bonjour ' . $u->display_name, 'tableau');
     echo '<p class="gvb-rappel">' . esc_html(gvb_profil_libelle($u) ?: 'Profil non défini') . ($pole && $pole !== '__aucun__' ? ' · pôle ' . esc_html(GVB_POLES[$pole]) : '') . ' · année ' . esc_html(gvb_reglages()['annee']) . '</p>';
+    do_action('gvb_accueil_avant', $profil);
     $affiches = 0;
     foreach (gvb_accueil_config($profil) as $id) {
         if (!gvb_bloc_autorise($id)) continue;

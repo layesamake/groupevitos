@@ -564,11 +564,12 @@ function gvb_debut($titre, $icone = '', $actions = '') {
     $actions = apply_filters('gvb_debut_actions', $actions, $titre);
     echo '<div class="wrap gvb"><header class="gvb-entete"><h1>' . ($icone ? '<span class="gvb-titre-icone">' . gvb_icone($icone, 26) . '</span>' : '') . esc_html($titre) . '</h1><div class="gvb-entete-actions">' . $actions . '</div></header>';
     gvb_notice();
+    do_action('gvb_debut_apres', $titre);
 }
 function gvb_fin() { echo '</div>'; }
 
 // ── Menu GROUPE VITOS ─────────────────────────────────────────────────────────
-const GVB_PAGES_CACHEES = ['gv-recherche' => ['Recherche', 'gv_acces', 'gvb_page_recherche'], 'gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant'], 'gv-seance' => ['Appel', 'gv_planning_voir', 'gvb_page_seance'], 'gv-enseignant' => ['Fiche enseignant', 'gv_pedagogie_voir', 'gvb_page_enseignant'], 'gv-compte' => ['Compte financier', 'gv_finances_voir', 'gvb_page_compte'], 'gv-recu' => ['Reçu', 'gv_finances_voir', 'gvb_page_recu']];
+const GVB_PAGES_CACHEES = ['gv-preferences' => ['Mes préférences', 'gv_acces', 'gvb_page_preferences'], 'gv-recherche' => ['Recherche', 'gv_acces', 'gvb_page_recherche'], 'gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant'], 'gv-seance' => ['Appel', 'gv_planning_voir', 'gvb_page_seance'], 'gv-enseignant' => ['Fiche enseignant', 'gv_pedagogie_voir', 'gvb_page_enseignant'], 'gv-compte' => ['Compte financier', 'gv_finances_voir', 'gvb_page_compte'], 'gv-recu' => ['Reçu', 'gv_finances_voir', 'gvb_page_recu']];
 
 const GVB_EXTERNES = ['users.php', 'edit.php?post_type=candidature'];
 // Sections du menu : [titre, icône WordPress, position, éléments [titre, slug, droit, fonction, pictogramme, compteur]]
