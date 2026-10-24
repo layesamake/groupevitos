@@ -9,9 +9,9 @@
 if (!defined('ABSPATH')) exit;
 
 const GVB_DB_VERSION = '5';
-const GVB_ROLES_VERSION = '8';
+const GVB_ROLES_VERSION = '9';
 const GVB_POLES = ['universite' => 'Université', 'lycee' => 'Lycée', 'itp' => 'ITP'];
-const GVB_DOMAINES = ['admissions' => 'Admissions', 'inscriptions' => 'Inscriptions', 'etudiants' => 'Étudiants', 'finances' => 'Finances', 'pedagogie' => 'Programmes et enseignants', 'planning' => 'Emploi du temps et présences', 'espaces' => 'Espaces en ligne', 'contacts' => 'Contacts', 'publications' => 'Publications', 'candidatures' => 'Candidatures (CV)', 'parametres' => 'Réglages'];
+const GVB_DOMAINES = ['admissions' => 'Admissions', 'inscriptions' => 'Inscriptions', 'etudiants' => 'Étudiants', 'finances' => 'Finances', 'pedagogie' => 'Programmes et enseignants', 'planning' => 'Emploi du temps et présences', 'espaces' => 'Espaces en ligne', 'pilotage' => 'Pilotage', 'contacts' => 'Contacts', 'publications' => 'Publications', 'candidatures' => 'Candidatures (CV)', 'parametres' => 'Réglages'];
 const GVB_ACTIONS = ['voir' => 'Consulter', 'creer' => 'Créer', 'modifier' => 'Modifier', 'valider' => 'Décider', 'annuler' => 'Annuler', 'exporter' => 'Exporter'];
 const GVB_PROFILS = ['gv_direction' => 'Direction', 'gv_scolarite' => 'Scolarité', 'gv_comptabilite' => 'Comptabilité', 'gv_responsable_pole' => 'Responsable de pôle', 'gv_communication' => 'Chargé de communication'];
 const GVB_CAPS_ARTICLES = ['edit_posts', 'edit_others_posts', 'edit_published_posts', 'publish_posts', 'delete_posts', 'delete_published_posts', 'read_private_posts', 'upload_files'];
@@ -32,8 +32,8 @@ function gvb_matrice() {
     return [
         'gv_direction' => array_fill_keys(array_keys(GVB_DOMAINES), $tout),
         'gv_scolarite' => ['admissions' => 'voir,creer,modifier,exporter', 'inscriptions' => 'voir,creer,modifier,exporter', 'contacts' => 'voir,modifier,exporter', 'publications' => 'voir,creer,annuler', 'etudiants' => 'voir,creer,modifier,exporter', 'finances' => 'voir', 'pedagogie' => 'voir,creer,modifier,exporter', 'planning' => 'voir,creer,modifier,exporter', 'espaces' => 'voir,creer,modifier'],
-        'gv_comptabilite' => ['admissions' => 'voir', 'inscriptions' => 'voir,exporter', 'etudiants' => 'voir,exporter', 'finances' => 'voir,creer,modifier,exporter', 'pedagogie' => 'voir,exporter,valider', 'planning' => 'voir'],
-        'gv_responsable_pole' => ['admissions' => 'voir,creer,modifier,valider', 'inscriptions' => 'voir', 'etudiants' => 'voir', 'finances' => 'voir', 'pedagogie' => 'voir,creer,modifier', 'planning' => 'voir,creer,modifier', 'espaces' => 'voir,creer'],
+        'gv_comptabilite' => ['admissions' => 'voir', 'inscriptions' => 'voir,exporter', 'etudiants' => 'voir,exporter', 'finances' => 'voir,creer,modifier,exporter', 'pedagogie' => 'voir,exporter,valider', 'planning' => 'voir', 'pilotage' => 'voir'],
+        'gv_responsable_pole' => ['admissions' => 'voir,creer,modifier,valider', 'inscriptions' => 'voir', 'etudiants' => 'voir', 'finances' => 'voir', 'pedagogie' => 'voir,creer,modifier', 'planning' => 'voir,creer,modifier', 'espaces' => 'voir,creer', 'pilotage' => 'voir'],
         'gv_communication' => ['publications' => 'voir,creer,annuler', 'contacts' => 'voir,modifier', 'espaces' => 'voir,creer'],
     ];
 }
@@ -572,7 +572,7 @@ const GVB_PAGES_CACHEES = ['gv-demande' => ['Demande d’admission', 'gv_admissi
 add_action('admin_menu', function () {
     add_menu_page('GROUPE VITOS', 'GROUPE VITOS', 'gv_acces', 'gv', 'gvb_page_tableau', 'dashicons-welcome-learn-more', 2);
     foreach ([
-        ['Tableau de bord', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau'], ['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission'],
+        ['Tableau de bord', 'gv', 'gv_acces', 'gvb_page_tableau', 'tableau'], ['Pilotage', 'gv-pilotage', 'gv_pilotage_voir', 'gvb_page_pilotage', 'rapport'], ['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission'],
         ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs'], ['Étudiants', 'gv-etudiants', 'gv_etudiants_voir', 'gvb_page_etudiants', 'pole'], ['Programmes', 'gv-programmes', 'gv_pedagogie_voir', 'gvb_page_programmes', 'liste'], ['Enseignants', 'gv-enseignants', 'gv_pedagogie_voir', 'gvb_page_enseignants', 'cv'], ['Charges horaires', 'gv-charges', 'gv_pedagogie_voir', 'gvb_page_charges', 'horloge'], ['Emploi du temps', 'gv-planning', 'gv_planning_voir', 'gvb_page_planning', 'horloge'], ['Salles', 'gv-salles', 'gv_planning_voir', 'gvb_page_salles', 'inscription'], ['Absences', 'gv-absences', 'gv_planning_voir', 'gvb_page_absences', 'alerte'], ['Espaces en ligne', 'gv-espaces', 'gv_espaces_voir', 'gvb_page_espaces', 'utilisateurs'], ['Annonces', 'gv-annonces', 'gv_espaces_voir', 'gvb_page_annonces', 'rapport'], ['Notifications', 'gv-notifs', 'gv_espaces_voir', 'gvb_page_notifs', 'alerte'], ['Finances', 'gv-finances', 'gv_finances_voir', 'gvb_page_finances', 'carte'], ['Impayés', 'gv-impayes', 'gv_finances_voir', 'gvb_page_impayes', 'alerte'], ['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport'], ['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage'],
     ] as [$titre, $slug, $cap, $cb, $icone]) add_submenu_page('gv', $titre, '<span class="gvb-mi">' . gvb_icone($icone, 16) . '</span>' . esc_html($titre), $cap, $slug, $cb);
     add_submenu_page('gv', 'Candidatures (CV)', '<span class="gvb-mi">' . gvb_icone('cv', 16) . '</span>Candidatures (CV)', 'edit_candidatures', 'edit.php?post_type=candidature');
