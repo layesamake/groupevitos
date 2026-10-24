@@ -62,6 +62,13 @@ add_action('phpmailer_init', function ($m) {
     $m->setFrom($c['expediteur'], 'Groupe VITO S.', false);
 });
 
+// Dernière erreur d'envoi, affichée sur l'écran Contacts pour diagnostiquer (jamais de mot de passe dedans)
+add_action('wp_mail_failed', function ($e) {
+    $c = gvb_smtp();
+    $msg = str_replace([$c['cle'], $c['login']], ['***', '***'], (string) $e->get_error_message());
+    update_option('gvb_dernier_echec_mail', ['le' => gvb_now(), 'message' => mb_substr($msg, 0, 300), 'smtp' => $c['actif'] ? 'Brevo activé' : 'Brevo non activé (envoi standard)'], false);
+});
+
 // ── Formulaire public ─────────────────────────────────────────────────────────
 add_action('rest_api_init', function () {
     register_rest_route('groupevitos/v1', '/plaquette', ['methods' => 'POST', 'permission_callback' => '__return_true', 'callback' => 'gvb_recevoir_contact']);
@@ -184,6 +191,7 @@ function gvb_page_contacts() {
     gvb_debut('Contacts — plaquette', 'utilisateurs', $actions);
     echo '<form method="get" class="gvb-filtres"><input type="hidden" name="page" value="gv-contacts">' . gvb_liste('canal', 'Canal', ['' => 'Tous', 'email' => 'E-mail', 'whatsapp' => 'WhatsApp'], $f['canal']) . gvb_liste('pole', 'Pôle', ['' => 'Tous'] + GVB_POLES, $f['pole']) . gvb_liste('statut', 'État', ['' => 'Tous'] + GVB_CONTACT_STATUTS, $f['statut']) . gvb_champ('q', 'Recherche', $f['q'], 'search') . gvb_bouton('Filtrer', false) . '</form>';
     echo gvb_tableau(['Reçu le', 'Canal', 'Contact', 'Pôle', 'État', 'Téléch.', 'Actions'], $lignes, 'Aucun contact pour le moment.');
+    if (($e = get_option('gvb_dernier_echec_mail')) && is_array($e)) echo '<div class="gvb-alerte"><strong>Dernier échec d’envoi (' . esc_html(gvb_dt($e['le'])) . ') :</strong> ' . esc_html($e['smtp']) . ' — ' . esc_html($e['message']) . '</div>';
     echo '<p class="gvb-rappel">Conservation : ' . GVB_CONSERVATION_MOIS . ' mois. ' . (is_file(gvb_plaquette_chemin()) ? 'Plaquette en place.' : '<strong class="gvb-ko">La plaquette n’est pas encore déposée sur le serveur.</strong>') . '</p>';
     gvb_fin();
 }
