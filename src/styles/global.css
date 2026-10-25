@@ -572,3 +572,52 @@ html.lb-open { overflow: hidden; }
   .about-intro__grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 3rem; }
 }
 @media (prefers-reduced-motion: reduce) { .about-pole, .about-nav a { transition: none; } .about-pole:hover { transform: none; } }
+
+/* Page Contact */
+.quick { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.quick__card { display: grid; gap: .5rem; align-content: start; padding: 1.5rem; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); }
+.quick__card svg { color: var(--cobalt); }
+.quick__card h3 { font-size: 1.4rem; }
+.quick__card p { margin: 0; color: #4A5578; line-height: 1.45; }
+.quick__card--main { background: var(--mango); border-color: var(--mango); }
+.quick__card--main svg, .quick__card--main p { color: var(--night); }
+.quick__big { margin-top: .4rem; font-family: var(--display); font-weight: 800; font-size: clamp(1.4rem, 3.2vw, 1.8rem); line-height: 1.1; letter-spacing: -.02em; text-decoration: none; color: var(--night); word-break: break-word; }
+.quick__big--mail { font-size: clamp(1.05rem, 2.4vw, 1.3rem); }
+.quick__big:hover { text-decoration: underline; }
+.quick__link { font-weight: 700; font-size: .9rem; }
+.quick__card .btn { justify-self: start; margin-top: .4rem; }
+.contact-grid { display: grid; gap: 2.5rem; align-items: start; }
+.contact-grid__lead { margin: 0 0 1.25rem; max-width: 40rem; line-height: 1.6; }
+.contact-form { max-width: none; }
+.contact-form__count { justify-self: end; font-weight: 400; color: #4A5578; }
+.phone-book { display: grid; gap: 1.25rem; padding: 1.5rem; background: var(--mist); border-radius: var(--radius); border-top: 5px solid var(--mango); scroll-margin-top: 1rem; }
+.phone-book h2 { font-size: 1.5rem; }
+.phone-book__group h3 { margin: 0 0 .4rem; font-family: inherit; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--cobalt); }
+.phone-book__group ul { display: grid; gap: .35rem; margin: 0; padding: 0; list-style: none; }
+.phone-book__group a { display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: 0 .9rem; background: var(--white); border: 1px solid var(--line); border-radius: 12px; font-weight: 700; text-decoration: none; color: var(--night); transition: border-color .2s, background .2s; }
+.phone-book__group a:hover { border-color: var(--cobalt); background: var(--cobalt-soft); }
+.phone-book__group svg { flex: none; color: var(--cobalt); }
+.contact-address { display: flex; gap: .6rem; align-items: flex-start; margin: 0 0 1rem; line-height: 1.5; font-size: 1.05rem; }
+.contact-address svg { flex: none; margin-top: 3px; color: var(--cobalt); }
+.contact-social { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+.contact-social p { margin: 0; font-weight: 800; }
+.contact-social .socials a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1.1rem; border: 2px solid var(--night); border-radius: 999px; font-weight: 700; text-decoration: none; color: var(--night); }
+.contact-social .socials a:hover { background: var(--night); color: var(--white); }
+@media (min-width: 760px) { .quick { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 960px) { .contact-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 3.5rem; } .phone-book { position: sticky; top: 1.5rem; } }
+
+/* Mot du Promoteur */
+.about-word__grid { display: grid; gap: 2rem; }
+.about-word__head { display: grid; gap: 1rem; align-content: start; }
+.about-word__head h2 { font-size: clamp(1.7rem, 3.4vw, 2.6rem); }
+.about-word__pull { position: relative; margin: 1.6rem 0 0; padding: 1.6rem 1.4rem 1.4rem 1.6rem; background: var(--night); color: var(--white); border-radius: var(--radius); font-family: var(--display); font-weight: 800; font-size: clamp(1.3rem, 2.6vw, 1.8rem); line-height: 1.15; letter-spacing: -.02em; }
+.about-word__pull::before { content: "“"; position: absolute; top: -.35em; left: .9rem; font-size: 5rem; line-height: 1; color: var(--mango); }
+.about-word__pull::after { content: ""; position: absolute; right: 0; bottom: 0; width: 2.4rem; height: 2.4rem; background: var(--mango); clip-path: polygon(100% 0, 100% 100%, 0 100%); border-bottom-right-radius: var(--radius); }
+.about-word__text { display: grid; gap: 1.1rem; max-width: 42rem; font-size: 1.08rem; line-height: 1.8; }
+.about-word__text p { margin: 0; }
+.about-word__lead { font-size: 1.2rem; color: var(--night); font-weight: 500; }
+.about-word__sign { display: grid; gap: .1rem; margin-top: .6rem !important; padding-left: 1rem; border-left: 4px solid var(--mango); }
+.about-word__sign b { font-family: var(--display); font-size: 1.15rem; color: var(--night); }
+.about-word__sign span { font-size: .9rem; font-weight: 600; color: #4A5578; }
+@media (min-width: 960px) { .about-word__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 3.5rem; align-items: start; } .about-word__head { position: sticky; top: 1.5rem; } }
+.contact-grid h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); }

@@ -1,0 +1,70 @@
+---
+// Formulaire de contact : envoyé au back-office (Communication → Messages). Protections côté serveur : jeton signé à usage unique,
+// champ piège, limites de débit, validation stricte, origine contrôlée. Côté navigateur : validation de confort uniquement.
+const api = import.meta.env.PUBLIC_WP_API ?? 'https://admin.groupevitos.com/wp-json';
+---
+<form class="cv-form contact-form" data-api={`${api}/groupevitos/v1/message`} novalidate>
+  <div class="cv-form__grid">
+    <label>Votre nom<input name="nom" autocomplete="name" required minlength="2" maxlength="100"></label>
+    <label>Votre adresse e-mail<input name="email" type="email" autocomplete="email" required maxlength="190" inputmode="email"></label>
+    <label>Téléphone (facultatif)<input name="telephone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" placeholder="+223 70 00 00 00"></label>
+    <label>Objet de votre message
+      <select name="objet" required>
+        <option value="">Choisir…</option>
+        <option value="admission">Admission et inscription</option>
+        <option value="scolarite">Scolarité, frais et paiements</option>
+        <option value="partenariat">Partenariat, stage ou collaboration</option>
+        <option value="autre">Autre demande</option>
+      </select>
+    </label>
+  </div>
+  <label>Pôle concerné (facultatif)
+    <select name="pole"><option value="">Je ne sais pas / tous</option><option value="universite">Université</option><option value="lycee">Lycée</option><option value="itp">ITP</option></select>
+  </label>
+  <label>Votre message
+    <textarea name="message" rows="6" required minlength="10" maxlength="2000"></textarea>
+    <small class="contact-form__count" aria-live="off"><span data-count>0</span> / 2000</small>
+  </label>
+  <input type="hidden" name="jeton" value="">
+  <input class="cv-form__trap" name="site_web" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <label class="cv-form__consent"><input name="consentement" type="checkbox" value="1" required> J’accepte que le Groupe VITO S. conserve ces informations (12 mois) pour répondre à ma demande. Aucune publicité, aucune transmission à des tiers.</label>
+  <button class="btn btn--night" type="submit">Envoyer mon message</button>
+  <p class="cv-form__status" role="status" aria-live="polite"></p>
+</form>
+<script>
+  const form = document.querySelector<HTMLFormElement>('.contact-form');
+  const status = form?.querySelector<HTMLElement>('.cv-form__status');
+  const area = form?.elements.namedItem('message') as HTMLTextAreaElement | null;
+  const count = form?.querySelector<HTMLElement>('[data-count]');
+  if (form && status) {
+    // Jeton signé : demandé au chargement, redemandé après chaque envoi (usage unique)
+    const fresh = async () => {
+      try {
+        const answer = await (await fetch(`${form.dataset.api}/jeton`)).json();
+        (form.elements.namedItem('jeton') as HTMLInputElement).value = answer.t ?? '';
+      } catch { /* le message d'erreur s'affichera à l'envoi */ }
+    };
+    fresh();
+    area?.addEventListener('input', () => { if (count && area) count.textContent = String(area.value.length); });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const button = form.querySelector('button')!;
+      button.disabled = true;
+      status.textContent = 'Envoi en cours…';
+      try {
+        if (!(form.elements.namedItem('jeton') as HTMLInputElement).value) await fresh();
+        const response = await fetch(form.dataset.api!, { method: 'POST', body: new FormData(form) });
+        const answer = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(answer.message ?? 'L’envoi a échoué. Réessayez ou appelez-nous.');
+        form.reset(); if (count) count.textContent = '0';
+        status.textContent = 'Merci ! Votre message a bien été envoyé. Nous vous répondons par e-mail dès que possible.';
+      } catch (error) {
+        status.textContent = (error as Error).message;
+      } finally {
+        button.disabled = false;
+        await fresh();
+      }
+    });
+  }
+</script>

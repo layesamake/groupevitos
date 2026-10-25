@@ -8,6 +8,7 @@ import FormationCard from '../components/FormationCard.astro';
 import FamilyFilter from '../components/FamilyFilter.astro';
 import Tarifs from '../components/Tarifs.astro';
 import GalleryViewer from '../components/GalleryViewer.astro';
+import ContactForm from '../components/ContactForm.astro';
 import CandidatureForm from '../components/CandidatureForm.astro';
 import AdmissionForm from '../components/AdmissionForm.astro';
 import { familiesOf, getContent, pageBySlug, pathOf, type Entry } from '../lib/wordpress';
@@ -55,6 +56,23 @@ const about = slug === 'a-propos' ? (() => {
   const find = (pattern: RegExp) => blocks.find(block => pattern.test(block.title));
   return { intro, tagline, blocks, poles: find(/p[ôo]les/i), histoire: find(/tablissement|bamako/i), pratique: find(/formation|pratique/i), implantations: find(/implantation/i) };
 })() : null;
+// Page Contact : numéros regroupés par service (le standard d'abord), numéro principal mis en avant
+const phoneGroups = [...phonesAll.reduce((groups, c) => groups.set(c.meta.usage, [...(groups.get(c.meta.usage) ?? []), c]), new Map<string, typeof phonesAll>())]
+  .sort((x, y) => Number(/standard/i.test(y[0])) - Number(/standard/i.test(x[0])));
+const mainPhone = phonesAll.find(c => /standard/i.test(c.meta.usage)) ?? phonesAll[0];
+// Mot du Promoteur Directeur Général (page « Le Groupe »)
+const motPromoteur = {
+  titre: 'Mot du Promoteur Directeur Général',
+  phrase: 'Ensemble, bâtissons les talents de demain.',
+  paragraphes: [
+    'Dans un monde de plus en plus complexe et compétitif à la fois, et parfois non dénué de contradictions, où l’information est à la fois universelle et accessible, savoir ne suffit plus… Il est indispensable d’être excellent, à même de comprendre, d’analyser, d’interpréter, de juger et d’anticiper.',
+    'C’est pourquoi le programme des enseignements de l’Institut VITO S. permet d’acquérir, outre les savoir-faire du management, une culture générale internationale indispensable à votre réussite professionnelle.',
+    'Ici, nous aidons nos étudiants à mettre en évidence leurs qualités et à développer leurs compétences. En chaque être humain subsistent des qualités et des compétences, mais comment en profiter ? Voilà toute la réponse que vous donne notre enseignement.',
+    'Rejoindre l’Institut VITO S., c’est faire le choix d’un groupe expérimenté, à taille humaine, soucieux de l’avenir de ses étudiants et qui affiche d’excellents résultats grâce à une équipe enseignante de haut niveau. Choisir l’Institut VITO S., c’est choisir à coup sûr l’avance rapide vers une carrière réussie.',
+  ],
+  signature: 'M. Fousseynou TANDINA',
+  fonction: 'Promoteur Directeur Général',
+};
 const poleLink = (title: string) => /universit/i.test(title) ? '/universite/' : /lyc/i.test(title) ? '/lycee/' : /itp|technique/i.test(title) ? '/itp/' : '';
 const reperes = identityLines(identite.reperes).map(line => { const [year, ...text] = line.split('|'); return { year: year.trim(), text: text.join('|').trim() }; });
 ---
@@ -160,15 +178,52 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
       </div>
     </section>
   </> : slug === 'contacts' ? <>
-    <section class="section">
-      <div class="wrap pole-block">
-        <div class="contact__list">
-          {phonesAll.map(c => <a class="contact__item" href={telHref(c.meta.valeur)}><Icon name="phone" /><span><strong>{c.meta.usage}</strong><span>{c.meta.valeur}</span></span></a>)}
-          {email && <a class="contact__item" href={`mailto:${email.meta.valeur}`}><Icon name="mail" /><span><strong>Écrire un e-mail</strong><span>{email.meta.valeur}</span></span></a>}
-          <a class="contact__item" href={route ?? '#'}><Icon name="pin" /><span><strong>Itinéraire</strong><span>{address}</span></span></a>
+    <section class="section contact-quick">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow number="01">Nous joindre</Eyebrow><h2>Trois façons de nous contacter</h2></div>
+        <ul class="quick">
+          {mainPhone && <li class="quick__card quick__card--main">
+            <Icon name="phone" size={28} /><h3>Appeler</h3><p>{mainPhone.meta.usage}</p>
+            <a class="quick__big" href={telHref(mainPhone.meta.valeur)}>{mainPhone.meta.valeur}</a>
+            <a class="quick__link" href="#numeros">Tous nos numéros ↓</a>
+          </li>}
+          <li class="quick__card">
+            <Icon name="mail" size={28} /><h3>Écrire</h3><p>Nous répondons par e-mail</p>
+            {email && <a class="quick__big quick__big--mail" href={`mailto:${email.meta.valeur}`}>{email.meta.valeur}</a>}
+            <a class="quick__link" href="#message">Ou utilisez le formulaire ↓</a>
+          </li>
+          <li class="quick__card">
+            <Icon name="pin" size={28} /><h3>Venir</h3><p>{address}</p>
+            <a class="btn btn--night btn--small" href={route ?? '#plan'}>Itinéraire</a>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section--white" id="message">
+      <div class="wrap contact-grid">
+        <div>
+          <div class="section__head"><Eyebrow number="02">Écrivez-nous</Eyebrow><h2>Envoyez-nous un message</h2></div>
+          <p class="contact-grid__lead">Admission, scolarité, partenariat… Dites-nous en quelques lignes ce dont vous avez besoin : nous vous répondons par e-mail.</p>
+          <ContactForm />
         </div>
-        {socials.length > 0 && <div class="socials">{socials.map(c => <a href={c.meta.valeur} rel="noopener" target="_blank">{c.meta.usage}</a>)}</div>}
+        <aside class="phone-book" id="numeros">
+          <h2>Tous nos numéros</h2>
+          {phoneGroups.map(([usage, numbers]) => <section class="phone-book__group">
+            <h3>{usage}</h3>
+            <ul>{numbers.map(c => <li><a href={telHref(c.meta.valeur)}><Icon name="phone" size={18} />{c.meta.valeur}</a></li>)}</ul>
+          </section>)}
+          {email && <section class="phone-book__group"><h3>E-mail</h3><ul><li><a href={`mailto:${email.meta.valeur}`}><Icon name="mail" size={18} />{email.meta.valeur}</a></li></ul></section>}
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="plan">
+      <div class="wrap">
+        <div class="section__head"><Eyebrow number="03">Nous trouver</Eyebrow><h2>Venir à l’Institut</h2></div>
+        <p class="contact-address"><Icon name="pin" size={20} /><span>{address}</span></p>
         {map && <iframe class="map" src={map} title="Plan d’accès à l’Institut VITO S." loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>}
+        {socials.length > 0 && <div class="contact-social"><p>Suivez-nous</p><div class="socials">{socials.map(c => <a href={c.meta.valeur} rel="noopener" target="_blank">{c.meta.usage}</a>)}</div></div>}
       </div>
     </section>
   </> : slug === 'a-propos' ? (about && about.blocks.length >= 3 ? <>
@@ -192,6 +247,7 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
       <nav class="wrap about-nav" aria-label="Sur cette page">
         {about.poles && <a href="#poles">Nos pôles</a>}
         {about.histoire && <a href="#histoire">Notre histoire</a>}
+        <a href="#mot">Le mot du Promoteur</a>
         {about.pratique && <a href="#pedagogie">Notre pédagogie</a>}
         {reperes.length > 0 && <a href="#reperes">Repères</a>}
         {about.implantations && <a href="#implantations">Implantations</a>}
@@ -218,31 +274,45 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
         <div class="about-story__content">
           <div class="section__head"><Eyebrow number="03">Notre histoire</Eyebrow><h2>{about.histoire.title}</h2></div>
           <div class="about-story__text" set:html={about.histoire.html} />
-          <p class="about-story__who"><b>M. Fousseynou TANDINA</b><span>Fondateur de l’Institut VITO S.</span></p>
+          <p class="about-story__who"><b>M. Fousseynou TANDINA</b><span>Promoteur Directeur Général</span></p>
         </div>
         <div class="about-founder">
-          <img src="/fousseynou-tandina.webp" width="640" height="680" loading="lazy" decoding="async" alt="Portrait de M. Fousseynou Tandina, fondateur de l’Institut VITO S." />
+          <img src="/fousseynou-tandina.webp" width="640" height="680" loading="lazy" decoding="async" alt="Portrait de M. Fousseynou Tandina, Promoteur Directeur Général de l’Institut VITO S." />
         </div>
       </div>
     </section>}
 
+    <section class="section section--white about-word" id="mot">
+      <div class="wrap about-word__grid">
+        <div class="about-word__head">
+          <Eyebrow number="04">Le mot du Promoteur</Eyebrow>
+          <h2>{motPromoteur.titre}</h2>
+          <p class="about-word__pull">{motPromoteur.phrase}</p>
+        </div>
+        <div class="about-word__text">
+          {motPromoteur.paragraphes.map((paragraphe, i) => <p class={i === 0 ? 'about-word__lead' : undefined}>{paragraphe}</p>)}
+          <p class="about-word__sign"><b>{motPromoteur.signature}</b><span>{motPromoteur.fonction}</span></p>
+        </div>
+      </div>
+    </section>
+
     {about.pratique && <section class="section section--white" id="pedagogie">
       <div class="wrap">
-        <div class="section__head"><Eyebrow number="04">Notre pédagogie</Eyebrow><h2>{about.pratique.title}</h2></div>
+        <div class="section__head"><Eyebrow number="05">Notre pédagogie</Eyebrow><h2>{about.pratique.title}</h2></div>
         <ul class="about-points">{listItems(about.pratique.html).map(item => <li><Icon name="check" size={22} /><span>{item.title ? <><strong>{item.title}</strong> — {item.text}</> : item.text}</span></li>)}</ul>
       </div>
     </section>}
 
     {reperes.length > 0 && <section class="section" id="reperes">
       <div class="wrap">
-        <div class="section__head"><Eyebrow number="05">Repères</Eyebrow><h2>Notre parcours</h2></div>
+        <div class="section__head"><Eyebrow number="06">Repères</Eyebrow><h2>Notre parcours</h2></div>
         <ol class="about-timeline">{reperes.map(r => <li>{r.year && <strong>{r.year}</strong>}<span>{r.text}</span></li>)}</ol>
       </div>
     </section>}
 
     {about.implantations && <section class="section section--white" id="implantations">
       <div class="wrap about-where">
-        <div class="section__head"><Eyebrow number="06">Où nous trouver</Eyebrow><h2>{about.implantations.title}</h2></div>
+        <div class="section__head"><Eyebrow number="07">Où nous trouver</Eyebrow><h2>{about.implantations.title}</h2></div>
         <div class="about-where__card"><Icon name="pin" size={26} /><div set:html={about.implantations.html} /></div>
       </div>
     </section>}
