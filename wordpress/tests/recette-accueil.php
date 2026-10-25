@@ -113,8 +113,8 @@ $t('administrateur : ordre Accueil → Scolarité → Pédagogie → Finances �
 $t('administrateur : le contenu du site vient après les écrans métier, avant le menu des outils', $pos('gv-publications') < $pos('edit.php') && $pos('edit.php') < $pos('edit.php?post_type=formation') && $pos('edit.php?post_type=formation') < $pos('edit.php?post_type=tarif') && $pos('edit.php?post_type=tarif') < $pos('edit.php?post_type=page') && $pos('edit.php?post_type=page') < $pos('upload.php') && $pos('upload.php') < $pos('gv-reglages') && $pos('gv-reglages') < $pos(GVB_MENU_OUTILS_SLUG), json_encode($ord));
 $t('administrateur : les menus natifs (commentaires, apparence, extensions, outils, réglages) ne sont plus au premier niveau', !array_intersect(GVB_OUTILS_NATIFS, $ord), json_encode($ord));
 $sous = array_column($submenu[GVB_MENU_OUTILS_SLUG] ?? [], 0, 2);
-$t('administrateur : un seul menu « ' . GVB_MENU_OUTILS . ' » regroupe tous les outils WordPress', array_keys($sous) === ['edit-comments.php', 'themes.php', 'plugins.php', 'tools.php', 'options-general.php', 'options-permalink.php'], json_encode(array_keys($sous)));
-$t('administrateur : outils en français', $sous['edit-comments.php'] === 'Commentaires' && $sous['themes.php'] === 'Apparence' && $sous['plugins.php'] === 'Extensions' && $sous['tools.php'] === 'Outils' && $sous['options-general.php'] === 'Réglages WordPress' && $sous['options-permalink.php'] === 'Permaliens', json_encode($sous));
+$t('administrateur : un seul menu « ' . GVB_MENU_OUTILS . ' » regroupe tous les outils avancés', array_keys($sous) === ['edit-comments.php', 'themes.php', 'plugins.php', 'tools.php', 'options-general.php', 'options-permalink.php'], json_encode(array_keys($sous)));
+$t('administrateur : outils en français', $sous['edit-comments.php'] === 'Commentaires' && $sous['themes.php'] === 'Apparence' && $sous['plugins.php'] === 'Extensions' && $sous['tools.php'] === 'Outils' && $sous['options-general.php'] === 'Réglages du site' && $sous['options-permalink.php'] === 'Permaliens', json_encode($sous));
 $t('administrateur : les droits d’origine sont conservés sur chaque outil', array_column($submenu[GVB_MENU_OUTILS_SLUG], 1, 2)['plugins.php'] === 'activate_plugins' && array_column($submenu[GVB_MENU_OUTILS_SLUG], 1, 2)['themes.php'] === 'switch_themes');
 $t('administrateur : un menu inconnu reste présent, en fin de liste', $pos('autre-extension') !== false && $pos('autre-extension') > $pos(GVB_MENU_OUTILS_SLUG));
 $t('administrateur : Posts devient Actualités, Media devient Médias, menu des outils nommé', $lib['edit.php'] === 'Actualités' && $lib['upload.php'] === 'Médias' && ($lib[GVB_MENU_OUTILS_SLUG] ?? '') === GVB_MENU_OUTILS, json_encode($lib));
@@ -129,5 +129,13 @@ $blocsDe = function ($uid) use ($natifs) { global $menu, $submenu; wp_set_curren
 [$b, $o] = $blocsDe($cpt); $t('Comptabilité : bloc « Établissement » (Scolarité, Pédagogie, Finances en consultation)', $b === ['Établissement'] && $o === ['gv', 'gv-admissions', 'gv-programmes', 'gv-finances'], json_encode([$b, $o]));
 [$b, $o] = $blocsDe($com); $t('Communication : « Établissement » puis « Site public » (Actualités, Médias)', $b === ['Établissement', 'Site public'] && array_search('gv-publications', $o, true) < array_search('edit.php', $o, true) && array_search('edit.php', $o, true) < array_search('upload.php', $o, true), json_encode([$b, $o]));
 [$b, $o] = $blocsDe($adm); $t('administrateur : toujours trois blocs', $b === ['Établissement', 'Site public', 'Système'], json_encode($b));
+
+$lignes[] = "
+## Aucune marque WordPress";
+wp_set_current_user($adm); $GLOBALS['pagenow'] = 'wp-login.php';
+$t('les textes de l’administration ne citent plus WordPress', !str_contains(__('Welcome to WordPress!'), 'WordPress') && !str_contains(__('WordPress Address (URL)'), 'WordPress') && !str_contains(_x('WordPress', 'x'), 'WordPress'), __('WordPress Address (URL)'));
+$t('le nom du menu d’outils ne cite plus WordPress', !str_contains(GVB_MENU_OUTILS, 'WordPress'));
+ob_start(); gvb_retirer_liens_marque(); $js = ob_get_clean(); $t('les liens vers wordpress.org sont retirés des pages', str_contains($js, 'wordpress.org') && str_contains($js, 'replaceWith') && has_action('admin_footer', 'gvb_retirer_liens_marque') !== false && has_action('login_footer', 'gvb_retirer_liens_marque') !== false);
+$t('pied de page et logo de la barre d’outils sans WordPress', apply_filters('admin_footer_text', '') === 'Groupe VITO S. — espace de gestion' && apply_filters('update_footer', 'Version 7') === '');
 
 file_put_contents('/wordpress/wp-content/out/resultat.txt', implode("\n", $lignes) . "\n\n=== $ok réussis, $ko échecs ===\n");

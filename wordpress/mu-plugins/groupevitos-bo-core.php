@@ -666,7 +666,7 @@ function gvb_menu_blocs() {
     ];
 }
 // Tous les outils d'administration de WordPress dans un seul menu (renommer ici le menu)
-const GVB_MENU_OUTILS = 'Outils WordPress';
+const GVB_MENU_OUTILS = 'Outils avancés';
 const GVB_MENU_OUTILS_SLUG = 'gvb-outils-wp';
 const GVB_OUTILS_NATIFS = ['edit-comments.php', 'themes.php', 'plugins.php', 'tools.php', 'options-general.php'];
 function gvb_menu_regrouper() {
@@ -689,7 +689,7 @@ function gvb_menu_regrouper() {
 }
 add_action('admin_menu', 'gvb_menu_regrouper', 9990);
 function gvb_menu_francais($libelle) {
-    return str_replace(['Comments', 'Appearance', 'Plugins', 'Tools', 'Settings'], ['Commentaires', 'Apparence', 'Extensions', 'Outils', 'Réglages WordPress'], $libelle);
+    return str_replace(['Comments', 'Appearance', 'Plugins', 'Tools', 'Settings'], ['Commentaires', 'Apparence', 'Extensions', 'Outils', 'Réglages du site'], $libelle);
 }
 function gvb_menu_structurer() {
     global $menu;
@@ -750,6 +750,15 @@ add_filter('admin_footer_text', fn() => 'Groupe VITO S. — espace de gestion');
 add_filter('update_footer', '__return_empty_string', 99);
 add_filter('admin_title', fn($a, $t) => ($t ?: 'Espace de gestion') . ' — Groupe VITO S.', 10, 2);
 add_filter('screen_options_show_screen', fn($v) => current_user_can('manage_options') ? $v : false);
+// Aucune mention ni lien « WordPress » dans l'espace de gestion et sur la page de connexion
+function gvb_sans_marque($texte) { return is_string($texte) && str_contains($texte, 'WordPress') ? str_replace(['WordPress.org', 'WordPress'], ['le site officiel', 'la plateforme'], $texte) : $texte; }
+add_filter('gettext', fn($t) => (is_admin() || (isset($GLOBALS['pagenow']) && $GLOBALS['pagenow'] === 'wp-login.php')) ? gvb_sans_marque($t) : $t, 99);
+add_filter('gettext_with_context', fn($t) => (is_admin() || (isset($GLOBALS['pagenow']) && $GLOBALS['pagenow'] === 'wp-login.php')) ? gvb_sans_marque($t) : $t, 99);
+function gvb_retirer_liens_marque() {
+    echo "<script>document.querySelectorAll('a[href*=\"wordpress.org\"],a[href*=\"wp.org\"],a[href*=\"wordpress.com\"]').forEach(function(a){var s=document.createElement('span');s.innerHTML=a.innerHTML;s.className=a.className;a.replaceWith(s)});</script>";
+}
+add_action('admin_footer', 'gvb_retirer_liens_marque', 999);
+add_action('login_footer', 'gvb_retirer_liens_marque', 999);
 add_filter('login_headerurl', fn() => 'https://groupevitos.com');
 add_filter('login_headertext', fn() => 'Groupe VITO S.');
 add_filter('login_title', fn() => 'Connexion — Groupe VITO S.');
