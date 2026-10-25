@@ -213,16 +213,16 @@ const reperes = identityLines(identite.reperes).map(line => { const [year, ...te
       </div>
     </section>}
 
-    {about.histoire && <section class="section" id="histoire">
+    {about.histoire && <section class="section about-story-section" id="histoire">
       <div class="wrap about-story">
-        <div class="about-story__side">
+        <div class="about-story__content">
           <div class="section__head"><Eyebrow number="03">Notre histoire</Eyebrow><h2>{about.histoire.title}</h2></div>
-          <figure class="about-founder">
-            <img src="/fousseynou-tandina.webp" width="640" height="680" loading="lazy" decoding="async" alt="Portrait de M. Fousseynou Tandina, fondateur de l’Institut VITO S." />
-            <figcaption><strong>M. Fousseynou TANDINA</strong><span>Fondateur de l’Institut VITO S.</span></figcaption>
-          </figure>
+          <div class="about-story__text" set:html={about.histoire.html} />
+          <p class="about-story__who"><b>M. Fousseynou TANDINA</b><span>Fondateur de l’Institut VITO S.</span></p>
         </div>
-        <div class="about-story__text" set:html={about.histoire.html} />
+        <div class="about-founder">
+          <img src="/fousseynou-tandina.webp" width="640" height="680" loading="lazy" decoding="async" alt="Portrait de M. Fousseynou Tandina, fondateur de l’Institut VITO S." />
+        </div>
       </div>
     </section>}
 
