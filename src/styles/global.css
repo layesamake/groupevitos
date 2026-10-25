@@ -527,6 +527,13 @@ html.lb-open { overflow: hidden; }
 .about-pole a:hover { text-decoration: underline; }
 .about-story { display: grid; gap: 1.5rem; }
 .about-story h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); }
+.about-story__side { display: grid; gap: 1.5rem; align-content: start; }
+.about-founder { position: relative; margin: 0; overflow: hidden; border-radius: var(--radius); background: var(--cobalt); max-width: 26rem; }
+.about-founder::before { content: ""; position: absolute; right: 0; top: 0; width: 30%; aspect-ratio: 1; background: var(--mango); clip-path: polygon(100% 0, 100% 100%, 0 0); }
+.about-founder img { display: block; width: 100%; height: auto; margin-top: 1rem; }
+.about-founder figcaption { position: relative; display: grid; gap: .1rem; padding: 1rem 1.25rem 1.15rem; background: var(--night); color: var(--white); }
+.about-founder figcaption strong { font-family: var(--display); font-size: 1.15rem; color: var(--white); }
+.about-founder figcaption span { font-size: .88rem; color: var(--mango); font-weight: 600; }
 .about-story__text { display: grid; gap: 1rem; max-width: 46rem; font-size: 1.05rem; line-height: 1.7; }
 .about-story__text strong { color: var(--night); }
 .about-points { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
