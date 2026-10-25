@@ -493,6 +493,23 @@ function gvb_sequence($nom) {
 }
 
 // Jamais d'e-mail réel depuis un poste de développement ou de recette
+// Adresse du visiteur derrière Cloudflare : l'en-tête CF-Connecting-IP n'est cru que si la requête vient réellement d'un serveur Cloudflare
+const GVB_PLAGES_CLOUDFLARE = ['173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22', '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'];
+function gvb_ip_dans_plage($ip, $cidr) {
+    [$base, $bits] = array_pad(explode('/', $cidr), 2, '32');
+    $a = @inet_pton((string) $ip); $b = @inet_pton($base);
+    if ($a === false || $b === false || strlen($a) !== strlen($b)) return false;
+    $bits = (int) $bits; $octets = intdiv($bits, 8); $reste = $bits % 8;
+    if ($octets && substr($a, 0, $octets) !== substr($b, 0, $octets)) return false;
+    if ($reste) { $masque = (0xFF << (8 - $reste)) & 0xFF; if ((ord($a[$octets]) & $masque) !== (ord($b[$octets]) & $masque)) return false; }
+    return true;
+}
+function gvb_ip_visiteur() {
+    $direct = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    $cf = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
+    if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP) && $direct !== '') foreach (GVB_PLAGES_CLOUDFLARE as $plage) if (gvb_ip_dans_plage($direct, $plage)) return $cf;
+    return $direct;
+}
 function gvb_mail($a, $sujet, $corps) {
     if (defined('GVB_ESSAI')) { if (apply_filters('gvb_mail_echec', false, $a)) return false; $GLOBALS['gvb_mails'][] = [$a, $sujet, $corps]; return true; }
     $hote = (string) wp_parse_url(home_url(), PHP_URL_HOST);
@@ -569,7 +586,7 @@ function gvb_debut($titre, $icone = '', $actions = '') {
 function gvb_fin() { echo '</div>'; }
 
 // ── Menu GROUPE VITOS ─────────────────────────────────────────────────────────
-const GVB_PAGES_CACHEES = ['gv-preferences' => ['Mes préférences', 'gv_acces', 'gvb_page_preferences'], 'gv-recherche' => ['Recherche', 'gv_acces', 'gvb_page_recherche'], 'gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant'], 'gv-seance' => ['Appel', 'gv_planning_voir', 'gvb_page_seance'], 'gv-enseignant' => ['Fiche enseignant', 'gv_pedagogie_voir', 'gvb_page_enseignant'], 'gv-compte' => ['Compte financier', 'gv_finances_voir', 'gvb_page_compte'], 'gv-recu' => ['Reçu', 'gv_finances_voir', 'gvb_page_recu'], 'gv-tutoriels' => ['Tutoriels', 'gv_acces', 'gvb_page_tutoriels']];
+const GVB_PAGES_CACHEES = ['gv-preferences' => ['Mes préférences', 'gv_acces', 'gvb_page_preferences'], 'gv-recherche' => ['Recherche', 'gv_acces', 'gvb_page_recherche'], 'gv-demande' => ['Demande d’admission', 'gv_admissions_voir', 'gvb_page_demande'], 'gv-inscription' => ['Inscription', 'gv_inscriptions_voir', 'gvb_page_inscription'], 'gv-etudiant' => ['Fiche étudiant', 'gv_etudiants_voir', 'gvb_page_etudiant'], 'gv-seance' => ['Appel', 'gv_planning_voir', 'gvb_page_seance'], 'gv-enseignant' => ['Fiche enseignant', 'gv_pedagogie_voir', 'gvb_page_enseignant'], 'gv-compte' => ['Compte financier', 'gv_finances_voir', 'gvb_page_compte'], 'gv-recu' => ['Reçu', 'gv_finances_voir', 'gvb_page_recu'], 'gv-tutoriels' => ['Tutoriels', 'gv_acces', 'gvb_page_tutoriels'], 'gv-message' => ['Message', 'gv_contacts_voir', 'gvb_page_message']];
 
 const GVB_EXTERNES = ['users.php', 'edit.php?post_type=candidature'];
 // Sections du menu : [titre, icône WordPress, position, éléments [titre, slug, droit, fonction, pictogramme, compteur]]
@@ -579,7 +596,7 @@ function gvb_menu_sections() {
         'scolarite' => ['Scolarité', 'dashicons-id-alt', 3, [['Admissions', 'gv-admissions', 'gv_admissions_voir', 'gvb_page_admissions', 'admission', 'admissions'], ['Inscriptions', 'gv-inscriptions', 'gv_inscriptions_voir', 'gvb_page_inscriptions', 'inscription', 'a_inscrire'], ['Étudiants', 'gv-etudiants', 'gv_etudiants_voir', 'gvb_page_etudiants', 'pole', null], ['Absences', 'gv-absences', 'gv_planning_voir', 'gvb_page_absences', 'alerte', null]]],
         'pedagogie' => ['Pédagogie', 'dashicons-book-alt', 4, [['Programmes', 'gv-programmes', 'gv_pedagogie_voir', 'gvb_page_programmes', 'liste', 'non_couverts'], ['Enseignants', 'gv-enseignants', 'gv_pedagogie_voir', 'gvb_page_enseignants', 'cv', null], ['Charges horaires', 'gv-charges', 'gv_pedagogie_voir', 'gvb_page_charges', 'horloge', null], ['Emploi du temps', 'gv-planning', 'gv_planning_voir', 'gvb_page_planning', 'horloge', 'sans_appel'], ['Salles', 'gv-salles', 'gv_planning_voir', 'gvb_page_salles', 'inscription', null]]],
         'finances' => ['Finances', 'dashicons-money-alt', 5, [['Finances', 'gv-finances', 'gv_finances_voir', 'gvb_page_finances', 'carte', null], ['Impayés', 'gv-impayes', 'gv_finances_voir', 'gvb_page_impayes', 'alerte', 'impayes']]],
-        'communication' => ['Communication', 'dashicons-megaphone', 6, [['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport', 'pub_echec'], ['Annonces', 'gv-annonces', 'gv_espaces_voir', 'gvb_page_annonces', 'journal', null], ['Notifications', 'gv-notifs', 'gv_espaces_voir', 'gvb_page_notifs', 'alerte', 'notifs_echec'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs', null], ['Espaces en ligne', 'gv-espaces', 'gv_espaces_voir', 'gvb_page_espaces', 'utilisateurs', 'invitations'], ['Candidatures (CV)', 'edit.php?post_type=candidature', 'edit_candidatures', '', 'cv', null]]],
+        'communication' => ['Communication', 'dashicons-megaphone', 6, [['Publications', 'gv-publications', 'gv_publications_voir', 'gvb_page_publications', 'rapport', 'pub_echec'], ['Annonces', 'gv-annonces', 'gv_espaces_voir', 'gvb_page_annonces', 'journal', null], ['Notifications', 'gv-notifs', 'gv_espaces_voir', 'gvb_page_notifs', 'alerte', 'notifs_echec'], ['Messages', 'gv-messages', 'gv_contacts_voir', 'gvb_page_messages', 'journal', 'messages_nouveaux'], ['Contacts', 'gv-contacts', 'gv_contacts_voir', 'gvb_page_contacts', 'utilisateurs', null], ['Espaces en ligne', 'gv-espaces', 'gv_espaces_voir', 'gvb_page_espaces', 'utilisateurs', 'invitations'], ['Candidatures (CV)', 'edit.php?post_type=candidature', 'edit_candidatures', '', 'cv', null]]],
         'admin' => ['Administration', 'dashicons-admin-generic', 7, [['Réglages', 'gv-reglages', 'gv_parametres_voir', 'gvb_page_reglages', 'reglage', null], ['Utilisateurs', 'users.php', 'list_users', '', 'utilisateurs', null]]],
     ];
 }
@@ -619,7 +636,7 @@ add_action('admin_menu', function () {
 }, 9999);
 // Un écran de détail garde sa section et son entrée de menu actives
 add_filter('parent_file', function ($pf) {
-    $carte = ['gv-demande' => ['scolarite', 'gv-admissions'], 'gv-inscription' => ['scolarite', 'gv-inscriptions'], 'gv-etudiant' => ['scolarite', 'gv-etudiants'], 'gv-seance' => ['pedagogie', 'gv-planning'], 'gv-enseignant' => ['pedagogie', 'gv-enseignants'], 'gv-compte' => ['finances', 'gv-finances'], 'gv-recu' => ['finances', 'gv-finances'], 'gv-tutoriels' => ['accueil', 'gv']];
+    $carte = ['gv-demande' => ['scolarite', 'gv-admissions'], 'gv-inscription' => ['scolarite', 'gv-inscriptions'], 'gv-etudiant' => ['scolarite', 'gv-etudiants'], 'gv-seance' => ['pedagogie', 'gv-planning'], 'gv-enseignant' => ['pedagogie', 'gv-enseignants'], 'gv-compte' => ['finances', 'gv-finances'], 'gv-recu' => ['finances', 'gv-finances'], 'gv-tutoriels' => ['accueil', 'gv'], 'gv-message' => ['communication', 'gv-messages']];
     $p = isset($_GET['page']) ? sanitize_key($_GET['page']) : '';
     if (isset($carte[$p]) && !empty($GLOBALS['gvb_parents'][$carte[$p][0]])) { $GLOBALS['gvb_sous_menu'] = $carte[$p][1]; return $GLOBALS['gvb_parents'][$carte[$p][0]]; }
     return $pf;

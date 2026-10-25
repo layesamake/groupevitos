@@ -42,7 +42,7 @@ $t('Direction : nouvelles demandes (3), en attente > 7 j (1), incomplètes (1), 
 $t('Direction : séance sans appel (1), cours non couvert (1), impayé (1), notification en échec (1)', $tc['sans_appel'][1] === 1 && $tc['non_couverts'][1] === 1 && $tc['impayes'][1] === 1 && $tc['notifs_echec'][1] === 1, json_encode(array_map(fn($x) => $x[1], $tc)));
 wp_set_current_user($rpL); $tl = gvb_taches(); $t('Responsable du Lycée : seulement les demandes de son pôle (1), rien pour l’Université', $tl['nouvelles'][1] === 1 && $tl['attente'][1] === 0 && $tl['sans_appel'][1] === 0 && !isset($tl['notifs_echec']) && !isset($tl['invitations']), json_encode(array_map(fn($x) => $x[1], $tl)));
 wp_set_current_user($cpt); $tcp = gvb_taches(); $t('Comptabilité : tâches financières seulement (pas d’admissions ni de séances)', isset($tcp['impayes']) && !isset($tcp['nouvelles']) && !isset($tcp['sans_appel']) && !isset($tcp['notifs_echec']), json_encode(array_keys($tcp)));
-wp_set_current_user($com); $tcm = gvb_taches(); $t('Communication : tâches de publication seulement', array_keys($tcm) === ['pub_echec'], json_encode(array_keys($tcm)));
+wp_set_current_user($com); $tcm = gvb_taches(); $t('Communication : tâches de publication et de messages seulement', array_keys($tcm) === ['messages_nouveaux', 'pub_echec'], json_encode(array_keys($tcm)));
 wp_set_current_user($sco); $ts = gvb_taches(); $t('Scolarité : admissions, séances et cours ; pas d’impayés', isset($ts['nouvelles']) && isset($ts['sans_appel']) && !isset($ts['impayes']), json_encode(array_keys($ts)));
 
 $lignes[] = "\n## Pages d'accueil par profil";
@@ -79,7 +79,7 @@ $t('Direction : les 6 sections', array_keys(gvb_menu_visible(get_userdata($dir))
 $t('Direction : Administration = Réglages et Utilisateurs ; Communication inclut les CV', $items($dir, 'admin') === ['Réglages', 'Utilisateurs'] && in_array('Candidatures (CV)', $items($dir, 'communication'), true));
 $t('Comptabilité : Accueil, Scolarité, Pédagogie, Finances ; ni Communication ni Administration', array_keys(gvb_menu_visible(get_userdata($cpt))) === ['accueil', 'scolarite', 'pedagogie', 'finances']);
 $t('Comptabilité : le Pilotage est accessible en consultation', in_array('Pilotage', $items($cpt, 'accueil'), true));
-$t('Communication : Accueil et Communication seulement', array_keys(gvb_menu_visible(get_userdata($com))) === ['accueil', 'communication'] && $items($com, 'accueil') === ['Accueil'] && $items($com, 'communication') === ['Publications', 'Annonces', 'Notifications', 'Contacts', 'Espaces en ligne']);
+$t('Communication : Accueil et Communication seulement', array_keys(gvb_menu_visible(get_userdata($com))) === ['accueil', 'communication'] && $items($com, 'accueil') === ['Accueil'] && $items($com, 'communication') === ['Publications', 'Annonces', 'Notifications', 'Messages', 'Contacts', 'Espaces en ligne']);
 $t('Scolarité : sections métier, pas d’Administration, ni Pilotage', !isset(gvb_menu_visible(get_userdata($sco))['admin']) && !in_array('Pilotage', $items($sco, 'accueil'), true) && isset(gvb_menu_visible(get_userdata($sco))['scolarite']));
 $t('Responsable de pôle : Pilotage visible, pas d’Administration', in_array('Pilotage', $items($rpU, 'accueil'), true) && !isset(gvb_menu_visible(get_userdata($rpU))['admin']));
 $t('une section n’est jamais ouverte par un élément externe (Utilisateurs, CV)', (function () use ($dir, $cpt) { foreach ([$dir, $cpt] as $u) foreach (gvb_menu_visible(get_userdata($u)) as $s) if (in_array($s['items'][0][1], GVB_EXTERNES, true)) return false; return true; })());

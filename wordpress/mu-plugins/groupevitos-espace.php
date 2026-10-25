@@ -25,7 +25,7 @@ function gve_cookie($valeur, $expire) {
     setcookie(GVE_COOKIE, $valeur, ['expires' => $expire, 'path' => '/espace', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax']);
 }
 function gve_h($s) { return esc_html((string) $s); }
-function gve_ip() { return md5((string) ($_SERVER['REMOTE_ADDR'] ?? '')); }
+function gve_ip() { return md5(function_exists('gvb_ip_visiteur') ? gvb_ip_visiteur() : (string) ($_SERVER['REMOTE_ADDR'] ?? '')); }
 function gve_limite($cle, $max, $duree) {
     $n = (int) get_transient($cle);
     if ($n >= $max) return false;

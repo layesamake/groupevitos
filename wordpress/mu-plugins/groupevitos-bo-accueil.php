@@ -43,6 +43,7 @@ function gvb_taches() {
         $il['notifs_echec'] = ['Notifications en échec d’envoi', $n('SELECT COUNT(*) FROM ' . $T('notifs') . " WHERE statut = 'echec'"), gvb_url('gv-notifs', ['statut' => 'echec'])];
         if ($pole === '') $il['invitations'] = ['Invitations non activées depuis plus de 7 jours', $n('SELECT COUNT(*) FROM ' . $T('comptes') . " WHERE mdp = '' AND cree_le < " . $wpdb->prepare('%s', gmdate('Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS))), gvb_url('gv-espaces')];
     }
+    if (gvb_can('contacts', 'modifier') && $pole === '') $il['messages_nouveaux'] = ['Nouveaux messages du formulaire de contact', gvb_messages_nouveaux(), gvb_url('gv-messages', ['statut' => 'nouveau'])];
     if (gvb_can('publications', 'creer')) $il['pub_echec'] = ['Publications Facebook en échec (7 jours)', $n('SELECT COUNT(*) FROM ' . $T('publications') . " WHERE statut = 'echec' AND cree_le > " . $wpdb->prepare('%s', gmdate('Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS))), gvb_url('gv-publications')];
     if (!defined('GVB_ESSAI')) set_transient($cle, $il, 120);
     return $il;

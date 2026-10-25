@@ -100,7 +100,7 @@ add_action('rest_api_init', function () {
 function gvb_recevoir(WP_REST_Request $r) {
     $p = $r->get_params();
     if (!empty($p['site_web'])) return ['ok' => true];
-    $ip = md5((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    $ip = md5(gvb_ip_visiteur());
     $cle = 'gvb_rl_' . $ip; $n = (int) get_transient($cle);
     if ($n >= 5) return new WP_Error('trop_de_demandes', 'Trop de demandes depuis cette adresse. Réessayez dans une heure.', ['status' => 429]);
     if (empty($p['consentement'])) return new WP_Error('consentement', 'Veuillez accepter le traitement de vos données.', ['status' => 422]);

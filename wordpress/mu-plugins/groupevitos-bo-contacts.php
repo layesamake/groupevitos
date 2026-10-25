@@ -79,7 +79,7 @@ function gvb_recevoir_contact(WP_REST_Request $r) {
     global $wpdb;
     $p = $r->get_params();
     if (!empty($p['site_web'])) return ['ok' => true];
-    $cle = 'gvb_rlc_' . md5((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    $cle = 'gvb_rlc_' . md5(gvb_ip_visiteur());
     $n = (int) get_transient($cle);
     if ($n >= 5) return new WP_Error('trop_de_demandes', 'Trop de demandes depuis cette adresse. Réessayez plus tard.', ['status' => 429]);
     if (empty($p['consentement'])) return new WP_Error('consentement', 'Veuillez accepter le traitement de vos données.', ['status' => 422]);

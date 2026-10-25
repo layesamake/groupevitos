@@ -63,7 +63,7 @@ function gvc_recevoir(WP_REST_Request $requete) {
     $d = $requete->get_body_params() ?: $requete->get_json_params();
     if (!empty($d['site_web'])) return ['ok' => true]; // champ piège : robot
 
-    $cle = 'gvc_depot_' . md5(sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? ''));
+    $cle = 'gvc_depot_' . md5(function_exists('gvb_ip_visiteur') ? gvb_ip_visiteur() : sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? ''));
     if ((int) get_transient($cle) >= 5) return new WP_Error('limite', 'Trop de dépôts envoyés. Réessayez dans une heure ou contactez-nous.', ['status' => 429]);
 
     $c = [
