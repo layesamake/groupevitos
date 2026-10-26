@@ -2,6 +2,9 @@
 import Base from '../../layouts/Base.astro';
 import PageHero from '../../components/PageHero.astro';
 import FormationCard from '../../components/FormationCard.astro';
+import Enseignements from '../../components/Enseignements.astro';
+import { completePedagogy } from '../../lib/pedagogie';
+import { sources } from '../../data/pedagogie-formations';
 import { familleOf, getContent, pageBySlug, pathOf, type Formation } from '../../lib/wordpress';
 import { institut } from '../../lib/institut';
 import { featured, image, plain, publicLinks } from '../../lib/html';
@@ -10,7 +13,9 @@ export async function getStaticPaths() {
   const { formations } = await getContent();
   return formations.map((formation, index) => ({ params: { slug: formation.slug }, props: { formation, index } }));
 }
-const { formation, index } = Astro.props as { formation: Formation; index: number };
+const { formation: original, index } = Astro.props as { formation: Formation; index: number };
+const { formation, pedagogie, supplemented } = completePedagogy(original);
+const hasTeachingSupplement = supplemented.includes('enseignements');
 const { formations, pages, media } = await getContent();
 const { meta } = formation;
 const img = featured(formation, '') ?? image(media[({ 'gestion-finance': 'banque.avif', 'management-marketing': 'rh.avif', 'droit-relations-internationales': 'fiscalite_1.avif', 'commerce-logistique': 'logistique.webp', 'communication-numerique': 'F89A7166-scaled-1.avif', 'developpement-secteurs-specialises': 'F89A7161-scaled-1.avif' } as Record<string, string>)[familleOf(formation)?.slug ?? ''] ?? 'etudiants.avif'], '');
@@ -33,7 +38,7 @@ const sections = [
   { id: 'parcours', label: 'Parcours', show: parcours.length > 0 },
   { id: 'finalite', label: 'Finalité', show: !!plain(meta.finalite) },
   { id: 'admission', label: 'Admission', show: !!plain(meta.admission) },
-  { id: 'enseignements', label: 'Enseignements', show: !!plain(meta.enseignements) },
+  { id: 'enseignements', label: 'Enseignements', show: hasTeachingSupplement || !!plain(meta.enseignements) },
   { id: 'competences', label: 'Compétences', show: !!plain(meta.competences) },
   { id: 'methodes', label: 'Méthodes', show: !!plain(meta.methodes) },
   { id: 'debouches', label: 'Débouchés', show: !!plain(meta.debouches) },
@@ -50,6 +55,16 @@ const others = formations.filter(other => other.id !== formation.id);
 
   <div class="wrap formation-layout">
     <article class="formation">
+      {pedagogie && supplemented.length > 0 && <div class="pedagogy-note">
+        <strong>À propos des compléments pédagogiques</strong>
+        <p>Les compléments ci-dessous sont proposés à titre indicatif à partir des programmes AFI-UE. Le programme définitif et les niveaux ouverts sont à confirmer auprès du service admission.</p>
+        {pedagogie.adaptation && <p>{pedagogie.adaptation}</p>}
+        <details>
+          <summary>Références et rubriques complétées</summary>
+          <p>Rubriques : {supplemented.map(key => sections.find(section => section.id === key)?.label ?? key).join(', ')}. Synthèse adaptée des programmes suivants :</p>
+          <ul>{pedagogie.sources.map(key => <li><a href={`https://afi-ue.sn/${sources[key][1]}/`}>{sources[key][0]} — AFI-UE</a></li>)}</ul>
+        </details>
+      </div>}
       {sections.length === 0 && <section id="catalogue">
         <h2>{formation.title.rendered}{meta.sigle && ` (${meta.sigle})`}</h2>
         <p>Cette formation fait partie du catalogue de l’Université VITO S.{famille && <> Elle relève du domaine « {famille.name} ».</>}</p>
@@ -62,7 +77,10 @@ const others = formations.filter(other => other.id !== formation.id);
       </section>}
       {plain(meta.finalite) && <section id="finalite"><h2>Finalité de la formation</h2><div class="prose" set:html={publicLinks(meta.finalite)} /></section>}
       {plain(meta.admission) && <section id="admission"><h2>Conditions d’admission</h2><div class="prose" set:html={publicLinks(meta.admission)} /></section>}
-      {plain(meta.enseignements) && <section id="enseignements"><h2>Enseignements principaux</h2><div class="prose" set:html={publicLinks(meta.enseignements)} /></section>}
+      {(hasTeachingSupplement || plain(meta.enseignements)) && <section id="enseignements">
+        <h2>Enseignements principaux</h2>
+        {hasTeachingSupplement && pedagogie ? <Enseignements pedagogie={pedagogie} /> : <div class="prose" set:html={publicLinks(meta.enseignements)} />}
+      </section>}
       {plain(meta.competences) && <section id="competences">
         <h2>Compétences visées</h2>
         {competenceItems.length ? <div class="accordion">{competenceItems.map((item, i) => <details open={i === 0}><summary>{item.title}</summary><p>{item.text}</p></details>)}</div>
@@ -97,3 +115,11 @@ const others = formations.filter(other => other.id !== formation.id);
     </div>
   </section>}
 </Base>
+
+<style>
+  .pedagogy-note { margin-bottom: 2rem; padding: 1.25rem 1.5rem; border-left: 3px solid #ffca3a; background: #f5f6fa; border-radius: 0 .75rem .75rem 0; font-size: .95rem; }
+  .pedagogy-note p { margin: .65rem 0; }
+  .pedagogy-note summary { cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: .2em; }
+  .pedagogy-note ul { padding-left: 1.2rem; }
+  .pedagogy-note a { overflow-wrap: anywhere; }
+</style>

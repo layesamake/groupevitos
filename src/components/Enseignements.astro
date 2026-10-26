@@ -1,0 +1,26 @@
+---
+import type { Pedagogie } from '../data/pedagogie-formations';
+interface Props { pedagogie: Pedagogie }
+const { pedagogie } = Astro.props;
+const cycles = [
+  { titre: 'Licence', detail: 'Acquérir les fondamentaux', modules: pedagogie.licence },
+  { titre: 'Master', detail: 'Approfondir l’analyse et le pilotage', modules: pedagogie.master },
+];
+---
+<div class="cycles">
+  {cycles.map(cycle => <div class="cycle">
+    <h3>{cycle.titre}</h3>
+    <p class="cycle-intro">{cycle.detail}</p>
+    <ul>{cycle.modules.map(module => <li>{module}</li>)}</ul>
+  </div>)}
+</div>
+<style>
+  .cycles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+  .cycle { min-width: 0; padding: 1.5rem; border: 1px solid #dcddea; border-top: 4px solid #ffca3a; border-radius: 0 0 1rem 1rem; background: #f5f6fa; }
+  .cycle h3 { margin: 0; font-size: 1.6rem; }
+  .cycle-intro { margin: .35rem 0 1rem; font-size: .95rem; }
+  .cycle ul { padding-left: 1.2rem; margin: 0; }
+  .cycle li { line-height: 1.6; margin-bottom: .8rem; }
+  .cycle li:last-child { margin-bottom: 0; }
+  @media (max-width: 760px) { .cycles { grid-template-columns: 1fr; } .cycle { padding: 1.25rem; } }
+</style>
