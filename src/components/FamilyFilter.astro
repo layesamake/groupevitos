@@ -15,5 +15,32 @@ const { target, families } = Astro.props;
       buttons.forEach(other => other.setAttribute('aria-pressed', String(other === button)));
       cards.forEach(card => { card.hidden = !!button.dataset.family && card.dataset.family !== button.dataset.family; });
     }));
+  let dragging = false, moved = false, startX = 0, startScroll = 0;
+  group.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    dragging = true;
+    moved = false;
+    startX = event.clientX;
+    startScroll = group.scrollLeft;
+    group.setPointerCapture(event.pointerId);
+    group.classList.add('is-dragging');
+  });
+  group.addEventListener('pointermove', event => {
+    if (!dragging) return;
+    const distance = event.clientX - startX;
+    if (Math.abs(distance) > 4) moved = true;
+    group.scrollLeft = startScroll - distance;
+  });
+  group.addEventListener('pointerup', event => {
+    dragging = false;
+    group.classList.remove('is-dragging');
+    if (group.hasPointerCapture(event.pointerId)) group.releasePointerCapture(event.pointerId);
+  });
+  group.addEventListener('click', event => {
+    if (!moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+    moved = false;
+  }, true);
   });
 </script>
