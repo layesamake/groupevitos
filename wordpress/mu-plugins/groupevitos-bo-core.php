@@ -750,8 +750,34 @@ add_filter('admin_footer_text', fn() => 'Groupe VITO S. — espace de gestion');
 add_filter('update_footer', '__return_empty_string', 99);
 add_filter('admin_title', fn($a, $t) => ($t ?: 'Espace de gestion') . ' — Groupe VITO S.', 10, 2);
 add_filter('screen_options_show_screen', fn($v) => current_user_can('manage_options') ? $v : false);
-// Aucune mention ni lien « WordPress » dans l'espace de gestion et sur la page de connexion
-function gvb_sans_marque($texte) { return is_string($texte) && str_contains($texte, 'WordPress') ? str_replace(['WordPress.org', 'WordPress'], ['le site officiel', 'la plateforme'], $texte) : $texte; }
+// Interface en français dans l'espace de gestion et sur la page de connexion.
+function gvb_traduire_interface($texte) {
+    if (!is_string($texte)) return $texte;
+    $traductions = [
+        'Username or Email Address' => 'Identifiant ou adresse e-mail',
+        'Username' => 'Identifiant',
+        'Email Address' => 'Adresse e-mail',
+        'Password' => 'Mot de passe',
+        'Remember Me' => 'Se souvenir de moi',
+        'Log In' => 'Se connecter',
+        'Log Out' => 'Se déconnecter',
+        'You are now logged out.' => 'Vous êtes maintenant déconnecté.',
+        'Lost your password?' => 'Mot de passe oublié ?',
+        'Back to %s' => 'Retour à %s',
+        'Error' => 'Erreur',
+        'You are not allowed to access this page.' => 'Vous n’êtes pas autorisé à accéder à cette page.',
+        'Are you lost?' => 'Vous êtes perdu ?',
+        'Language' => 'Langue',
+        'Change' => 'Modifier',
+        'Help' => 'Aide',
+        'Screen Options' => 'Options d’affichage',
+        'Howdy, %s' => 'Bonjour, %s',
+    ];
+    if (isset($traductions[$texte])) return $traductions[$texte];
+    // Aucune mention ni lien « WordPress » dans l’espace de gestion.
+    return str_replace(['WordPress.org', 'WordPress'], ['le site officiel', 'la plateforme'], $texte);
+}
+function gvb_sans_marque($texte) { return gvb_traduire_interface($texte); }
 add_filter('gettext', fn($t) => (is_admin() || (isset($GLOBALS['pagenow']) && $GLOBALS['pagenow'] === 'wp-login.php')) ? gvb_sans_marque($t) : $t, 99);
 add_filter('gettext_with_context', fn($t) => (is_admin() || (isset($GLOBALS['pagenow']) && $GLOBALS['pagenow'] === 'wp-login.php')) ? gvb_sans_marque($t) : $t, 99);
 function gvb_retirer_liens_marque() {

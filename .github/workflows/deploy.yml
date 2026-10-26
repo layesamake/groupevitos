@@ -39,3 +39,7 @@ jobs:
         run: node scripts/deploy-hostinger.mjs site.zip
         env:
           HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}
+      - name: Mettre à jour les extensions WordPress
+        run: node scripts/installer-mu-plugins.mjs
+        env:
+          HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}
