@@ -86,9 +86,52 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
         <div class="header__actions">
           {phone && <a class="header__phone" href={phone.href}>{phone.text}</a>}
           {signup && <a class="btn btn--mango btn--small" href={pathOf(signup)}>S’inscrire</a>}
+          <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu">
+            <span class="menu-toggle__icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span>Menu</span>
+          </button>
         </div>
       </div>
     </header>
+
+    <div class="mobile-menu" id="mobile-menu" hidden>
+      <div class="mobile-menu__backdrop" data-menu-close></div>
+      <aside class="mobile-menu__panel" aria-label="Menu mobile">
+        <div class="mobile-menu__top">
+          <strong>Menu</strong>
+          <button class="mobile-menu__close" type="button" aria-label="Fermer le menu" data-menu-close>×</button>
+        </div>
+        <nav class="mobile-menu__nav">
+          <a class="mobile-menu__home" href="/">Accueil <span aria-hidden="true">→</span></a>
+          <details open>
+            <summary>Formations <span aria-hidden="true">⌄</span></summary>
+            <a href="/formations/">Toutes les formations</a>
+            {footerPoles.map(item => <a href={item.path}>{item.label}</a>)}
+          </details>
+          <details open>
+            <summary>Démarches <span aria-hidden="true">⌄</span></summary>
+            <a href={page('admission') ? pathOf(page('admission')!) : '/admission/'}>Admissions</a>
+            <a href="/#plaquette">Recevoir la plaquette</a>
+            {signup && <a href={pathOf(signup)}>S’inscrire</a>}
+          </details>
+          <details>
+            <summary>Espaces <span aria-hidden="true">⌄</span></summary>
+            <a href="https://admin.groupevitos.com/espace/">Parents, étudiants, enseignants</a>
+          </details>
+          <details>
+            <summary>Découvrir <span aria-hidden="true">⌄</span></summary>
+            <a href={page('a-propos') ? pathOf(page('a-propos')!) : '/a-propos/'}>Le Groupe VITOS</a>
+            <a href={page('galeries') ? pathOf(page('galeries')!) : '/galeries/'}>Galerie</a>
+            <a href="/actualites/">Actualités</a>
+          </details>
+          <a class="mobile-menu__contact" href={page('contacts') ? pathOf(page('contacts')!) : '/contacts/'}>Contact <span aria-hidden="true">→</span></a>
+        </nav>
+        <div class="mobile-menu__actions">
+          {signup && <a class="btn btn--mango" href={pathOf(signup)}>S’inscrire</a>}
+          {phone && <a class="btn btn--ghost" href={phone.href}>Appeler</a>}
+        </div>
+      </aside>
+    </div>
 
     <main id="contenu"><slot /></main>
 
@@ -132,8 +175,26 @@ const ogImage = Astro.props.image ?? image(media['etudiants.avif'])?.src;
       </div>
     ) : (
       <nav class="bottom-bar" aria-label="Navigation mobile">
-        {tabs.map(item => <a href={item.path} aria-current={current(item.path)}><Icon name={item.icon} />{item.label}</a>)}
+        <a href="/" aria-current={current('/')}><Icon name="home" />Accueil</a>
+        <a href="/formations/"><Icon name="cap" />Formations</a>
+        <a href="/admission/"><Icon name="file" />Démarches</a>
+        <a href="https://admin.groupevitos.com/espace/"><Icon name="home" />Espaces</a>
+        <button type="button" class="bottom-bar__menu menu-toggle" aria-expanded="false" aria-controls="mobile-menu"><Icon name="menu" />Menu</button>
       </nav>
     )}
+    <script>
+      const menu = document.querySelector<HTMLElement>('#mobile-menu');
+      const menuToggles = document.querySelectorAll<HTMLButtonElement>('.menu-toggle');
+      const setMenuOpen = (open: boolean) => {
+        if (!menu) return;
+        menu.hidden = !open;
+        document.body.classList.toggle('menu-open', open);
+        menuToggles.forEach(toggle => toggle.setAttribute('aria-expanded', String(open)));
+      };
+      menuToggles.forEach(toggle => toggle.addEventListener('click', () => setMenuOpen(menu?.hidden ?? true)));
+      menu?.querySelectorAll<HTMLElement>('[data-menu-close]').forEach(control => control.addEventListener('click', () => setMenuOpen(false)));
+      menu?.querySelectorAll<HTMLAnchorElement>('a').forEach(link => link.addEventListener('click', () => setMenuOpen(false)));
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') setMenuOpen(false); });
+    </script>
   </body>
 </html>
