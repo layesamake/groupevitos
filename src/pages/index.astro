@@ -7,13 +7,14 @@ import Picture from '../components/Picture.astro';
 import GalleryViewer from '../components/GalleryViewer.astro';
 import Icon from '../components/Icon.astro';
 import PlaquetteForm from '../components/PlaquetteForm.astro';
+import PostCard from '../components/PostCard.astro';
 import { familiesOf, getContent, pageBySlug, pathOf } from '../lib/wordpress';
 import { featured, image, plain } from '../lib/html';
 import { figures, listItems, section, stairLines, steps } from '../lib/extract';
 import { institut } from '../lib/institut';
 import { POLES, ofType, telHref } from '../lib/referentiel';
 
-const { available, site, pages, formations, partenaires, coordonnees, identite, media } = await getContent();
+const { available, site, pages, posts, formations, partenaires, coordonnees, identite, media } = await getContent();
 const page = (slug: string) => pageBySlug(pages, slug);
 const byFile = (url: string) => media[url.split('/').pop()!];
 
@@ -37,6 +38,7 @@ const address = contactsPage?.content.rendered.match(/<p[^>]*>[^<]*<a[^>]*href="
 const phone = ofType(coordonnees, 'telephone')[0];
 const email = ofType(coordonnees, 'email')[0];
 const poles = POLES.filter(pole => page(pole.slug));
+const recentPosts = [...posts].sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, 3);
 const reperes = [
   { value: '2009', label: 'Création, agrément de l’État' },
   { value: String(POLES.length), label: 'Pôles : Université, Lycée, ITP' },
@@ -96,6 +98,16 @@ const reperes = [
         </div>
       </div>
       <a class="btn btn--outline btn--wide more-link" href="/formations/">Voir les {formations.length} formations <span aria-hidden="true">→</span></a>
+    </div>
+  </section>}
+
+  {recentPosts.length > 0 && <section class="section" id="actualites">
+    <div class="wrap">
+      <div class="section__head section__head--row">
+        <div class="section__head"><Eyebrow>Actualités</Eyebrow><h2>Nos dernières actualités</h2></div>
+        <a class="btn btn--outline" href="/actualites/">Toutes les actualités <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="cards cards--grid">{recentPosts.map(post => <PostCard post={post} />)}</div>
     </div>
   </section>}
 
