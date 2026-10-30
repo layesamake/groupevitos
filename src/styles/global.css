@@ -207,7 +207,8 @@ body.menu-open { overflow: hidden; }
 @media (min-width: 900px) { .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; overflow: visible; margin-inline: 0; padding-inline: 0; } }
 .card { display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; color: var(--night); text-decoration: none; transition: transform .2s, box-shadow .2s; }
 .card:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(10, 20, 51, .12); }
-.card__media { position: relative; aspect-ratio: 5 / 3; background: var(--cobalt-soft); }
+.card__media { position: relative; aspect-ratio: 5 / 3; overflow: hidden; background: var(--cobalt-soft); }
+.card__media picture { position: absolute; inset: 0; display: block; }
 .card__media img { width: 100%; height: 100%; object-fit: cover; }
 .card__num { position: absolute; left: 0; top: 0; width: 58px; height: 58px; display: grid; place-items: center; background: var(--mango); font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
 .card__body { display: flex; flex-direction: column; gap: .55rem; flex: 1; padding: 1rem 1.15rem 1.2rem; }
