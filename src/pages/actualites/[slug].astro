@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import PageHero from '../../components/PageHero.astro';
+import ArticleSidebar from '../../components/ArticleSidebar.astro';
 import { getContent, type Entry } from '../../lib/wordpress';
 import { featured, formatDate, plain, publicLinks } from '../../lib/html';
 export async function getStaticPaths() {
@@ -13,9 +14,20 @@ const img = featured(post);
 <Base title={post.title.rendered} description={plain(post.excerpt.rendered)} image={img?.src}>
   <PageHero title={post.title.rendered} kicker={formatDate(post.date)} img={img} className="page-hero--article" />
   <section class="section">
-    <div class="wrap">
-      <a class="back" href="/actualites/">← Actualités</a>
-      <article class="prose" set:html={publicLinks(post.content.rendered)} />
+    <div class="wrap article-layout">
+      <div class="article-content">
+        <a class="back" href="/actualites/">← Actualités</a>
+        <article class="prose" set:html={publicLinks(post.content.rendered)} />
+      </div>
+      <ArticleSidebar post={post} />
     </div>
   </section>
 </Base>
+
+<style>
+  .article-layout { display: grid; gap: 2.5rem; align-items: start; }
+  .article-content { min-width: 0; }
+  @media (min-width: 1000px) {
+    .article-layout { grid-template-columns: minmax(0, 46rem) minmax(300px, 1fr); gap: clamp(2rem, 4vw, 4rem); }
+  }
+</style>
