@@ -1,0 +1,78 @@
+---
+import Picture from './Picture.astro';
+import { getContent, type Entry } from '../lib/wordpress';
+import { featured, formatDate, plain } from '../lib/html';
+
+const { post } = Astro.props as { post: Entry };
+const { posts } = await getContent();
+const latestPosts = [...posts]
+  .sort((a, b) => Date.parse(b.date) - Date.parse(a.date) || b.id - a.id)
+  .slice(0, 3);
+const articleUrl = new URL(`/actualites/${post.slug}/`, Astro.site).href;
+const url = encodeURIComponent(articleUrl);
+const text = encodeURIComponent(`${plain(post.title.rendered)} — ${articleUrl}`);
+const shares = [
+  { label: 'Facebook', icon: 'f', href: `https://www.facebook.com/sharer/sharer.php?u=${url}` },
+  { label: 'WhatsApp', icon: 'whatsapp', href: `https://wa.me/?text=${text}` },
+  { label: 'LinkedIn', icon: 'in', href: `https://www.linkedin.com/sharing/share-offsite/?url=${url}` },
+  { label: 'X', icon: '𝕏', href: `https://twitter.com/intent/tweet?url=${url}&text=${encodeURIComponent(plain(post.title.rendered))}` },
+];
+---
+<aside class="article-sidebar" aria-label="Articles récents et partage">
+  {latestPosts.length > 0 && <section class="sidebar-panel" aria-labelledby="latest-articles-title">
+    <p class="sidebar-kicker">À LA UNE</p>
+    <h2 id="latest-articles-title">Les derniers articles</h2>
+    <ul class="latest-articles">
+      {latestPosts.map(recent => <li>
+        <a class="latest-article" href={`/actualites/${recent.slug}/`} aria-current={recent.id === post.id ? 'page' : undefined}>
+          <div class="latest-article__image"><Picture img={featured(recent)} sizes="88px" /></div>
+          <div>
+            <time datetime={recent.date}>{formatDate(recent.date)}</time>
+            <h3 set:html={recent.title.rendered} />
+          </div>
+        </a>
+      </li>)}
+    </ul>
+    <a class="all-articles" href="/actualites/">Toutes les actualités <span aria-hidden="true">→</span></a>
+  </section>}
+  <section class="sidebar-panel sidebar-panel--share" aria-labelledby="article-share-title">
+    <h2 id="article-share-title">Partager cet article</h2>
+    <p>Un article utile ? Faites-le découvrir à votre entourage.</p>
+    <div class="article-share">
+      {shares.map(share => <a href={share.href} target="_blank" rel="noopener noreferrer" aria-label={`Partager sur ${share.label} (nouvel onglet)`}>
+        <span class="share-icon" aria-hidden="true">
+          {share.icon === 'whatsapp'
+            ? <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a9 9 0 0 1-13.4 7.8L3 21l1.7-4.6A9 9 0 1 1 21 11.5Z"/><path d="m8 7 2 3-1 1c1 2 2 3 4 4l1-1 3 2c-1 2-3 2-5 1-3-1-6-4-6-7 0-2 1-3 2-3Z"/></svg>
+            : share.icon}
+        </span>
+        {share.label}
+      </a>)}
+    </div>
+  </section>
+</aside>
+
+<style>
+  .article-sidebar { display: grid; gap: 1.5rem; align-content: start; min-width: 0; }
+  .sidebar-panel { padding: 1.5rem; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); }
+  .sidebar-kicker { margin-bottom: .65rem; color: var(--muted); font-size: .7rem; font-weight: 800; letter-spacing: .12em; }
+  .sidebar-kicker::before { content: ''; display: inline-block; width: 1.5rem; height: 3px; margin: 0 .5rem .2rem 0; background: var(--mango); }
+  .sidebar-panel h2 { font-size: 1.45rem; line-height: 1.15; text-wrap: pretty; }
+  .latest-articles { list-style: none; padding: 0; margin: 1.25rem 0; }
+  .latest-articles li + li { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+  .latest-article { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: .85rem; text-decoration: none; align-items: start; }
+  .latest-article__image { aspect-ratio: 1; overflow: hidden; border-radius: 10px; background: var(--cobalt-soft); }
+  .latest-article__image :global(img) { width: 100%; height: 100%; object-fit: cover; }
+  .latest-article__image :global(picture) { display: contents; }
+  .latest-article time { display: block; margin-bottom: .35rem; font-size: .7rem; color: var(--muted); }
+  .latest-article h3 { font-size: .95rem; line-height: 1.3; letter-spacing: -.015em; text-wrap: pretty; overflow-wrap: anywhere; }
+  .latest-article:hover h3 { text-decoration: underline; text-underline-offset: 3px; }
+  .all-articles { display: flex; justify-content: space-between; gap: .5rem; font-weight: 700; font-size: .85rem; text-decoration: none; }
+  .all-articles:hover { text-decoration: underline; }
+  .sidebar-panel--share { background: var(--cobalt); color: var(--white); border-color: var(--cobalt); }
+  .sidebar-panel--share > p { margin-top: .75rem; font-size: .85rem; color: var(--cobalt-soft); }
+  .article-share { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: 1.25rem; }
+  .article-share a { display: flex; align-items: center; gap: .5rem; min-height: 44px; padding: .5rem .65rem; border: 1px solid #ffffff55; border-radius: 9px; color: var(--white); font-size: .8rem; font-weight: 600; text-decoration: none; }
+  .article-share a:hover { background: var(--mango); border-color: var(--mango); color: var(--night); }
+  .share-icon { display: grid; place-items: center; flex: 0 0 20px; font-family: system-ui, sans-serif; font-size: 1.15rem; font-weight: 800; line-height: 1; }
+  @media (max-width: 359px) { .sidebar-panel { padding: 1rem; } .latest-article { grid-template-columns: 64px minmax(0, 1fr); } }
+</style>
