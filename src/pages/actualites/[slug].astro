@@ -11,7 +11,7 @@ const { post } = Astro.props as { post: Entry };
 const img = featured(post);
 ---
 <Base title={post.title.rendered} description={plain(post.excerpt.rendered)} image={img?.src}>
-  <PageHero title={post.title.rendered} kicker={formatDate(post.date)} img={img} />
+  <PageHero title={post.title.rendered} kicker={formatDate(post.date)} img={img} className="page-hero--article" />
   <section class="section">
     <div class="wrap">
       <a class="back" href="/actualites/">← Actualités</a>

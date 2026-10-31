@@ -212,7 +212,7 @@ body.menu-open { overflow: hidden; }
 .card__media img { width: 100%; height: 100%; object-fit: cover; }
 .card__num { position: absolute; left: 0; top: 0; width: 58px; height: 58px; display: grid; place-items: center; background: var(--mango); font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
 .card__body { display: flex; flex-direction: column; gap: .55rem; flex: 1; padding: 1rem 1.15rem 1.2rem; }
-.card__body h3 { font-size: 1.35rem; line-height: 1.1; }
+.card__body h3 { font-size: clamp(1.05rem, 1.2vw, 1.2rem); line-height: 1.15; }
 .card__levels { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--cobalt); }
 .card__meta { font-size: .9rem; color: var(--muted); }
 .card__more { margin-top: auto; font-weight: 700; color: var(--cobalt); }
@@ -338,6 +338,7 @@ html.lb-open { overflow: hidden; }
 .page-hero__inner { display: grid; gap: 1.5rem; padding-block: 2.2rem 2.5rem; }
 .page-hero__text { display: grid; gap: .9rem; align-content: center; }
 .page-hero h1 { font-size: clamp(2.4rem, 9vw, 4.6rem); }
+.page-hero--article h1 { font-size: clamp(2rem, 6vw, 3.4rem); }
 .page-hero__kicker { font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--mango); }
 .page-hero__lead { color: rgba(255, 255, 255, .88); max-width: 36rem; }
 .page-hero__image { width: 100%; height: 230px; object-fit: cover; }
